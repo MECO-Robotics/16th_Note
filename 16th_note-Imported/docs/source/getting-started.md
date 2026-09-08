@@ -69,8 +69,10 @@ from the robot-specific vision settings in `frc.robot.Constants`:
   extensions disabled and supply a log when prompted by the replay utility.
   Replay IO allocates no motors; logged inputs are restored by AdvantageKit.
 
-Joystick and vision inputs are not recorded through a dedicated replay IO
-layer, so this does not guarantee identical replay of driver decisions.
+AdvantageKit automatically logs and replays Driver Station state and joystick
+inputs. The custom game-piece vision client reads live NetworkTables without
+a logged input layer, so vision-assist decisions are not reproduced reliably
+from a log alone.
 
 ## Deploy and operate
 

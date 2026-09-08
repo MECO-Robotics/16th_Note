@@ -47,6 +47,10 @@ it by default for replay compatibility. Team number remains 8324. Wiring and
 simulation parameters live in `constants/drive/TankDriveConstants.java`;
 vision settings remain in `frc/robot/Constants.java`.
 
+For an end-to-end NT4 check of the running simulator, follow
+[Live NetworkTables simulation check](docs/source/simulation-check.md).
+It drives 18 scenarios and records requested/applied voltage and physics feedback.
+
 The test suite covers output limits, forward/reverse/turn behavior, deadband,
 disable, command cancellation, vision stop/limits, and simulation movement.
 The robot Wi-Fi helper remains under `scripts/`.

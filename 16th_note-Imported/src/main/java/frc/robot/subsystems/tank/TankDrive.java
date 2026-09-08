@@ -30,7 +30,9 @@ public final class TankDrive extends SubsystemBase {
     setVoltage(
         speeds.left * TankDriveConstants.MAX_VOLTS, speeds.right * TankDriveConstants.MAX_VOLTS);
   }
-  /** Normalized forward and clockwise turn, matching the original vision adapter convention. */
+  /**
+   * Normalized forward and counterclockwise turn, matching the original vision adapter convention.
+   */
   public void arcadeDrive(double forward, double turn) {
     var speeds = DifferentialDrive.arcadeDriveIK(sanitize(forward), sanitize(turn), false);
     setVoltage(

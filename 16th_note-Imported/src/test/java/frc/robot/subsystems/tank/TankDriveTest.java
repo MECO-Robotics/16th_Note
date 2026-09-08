@@ -114,6 +114,14 @@ class TankDriveTest {
   }
 
   @Test
+  void positiveVisionTurnIsCounterclockwise() {
+    var adapter = new TankVisionDriveAdapter(drive, 0.35, 0.35);
+    adapter.apply(new DriveRequest(true, false, 0, 0, 0.5, 1));
+    assertEquals(-2.1, io.left, 1e-9);
+    assertEquals(2.1, io.right, 1e-9);
+  }
+
+  @Test
   void simulationMovesForwardAndTurns() {
     var sim = new TankDriveIOSim();
     var inputs = new TankDriveIO.TankDriveIOInputs();

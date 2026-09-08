@@ -110,6 +110,8 @@ test {
 // sim extensions be disabled.
 wpi.sim.addGui().defaultEnabled = false
 wpi.sim.addDriverstation()
+// Opt-in HAL WebSocket control for the external NetworkTables integration check.
+wpi.sim.addWebsocketsServer().defaultEnabled = project.hasProperty("ntCheck")
 
 // Setting up my Jar File. In this case, adding all libraries into the main jar ('fat jar')
 // in order to make them all available at runtime. Also adding the manifest so WPILib

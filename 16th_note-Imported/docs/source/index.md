@@ -9,6 +9,7 @@ drivetrain, AdvantageKit logging, and game-piece vision assist.
 :caption: Project guide
 
 getting-started
+simulation-check
 architecture
 subsystems
 customizing

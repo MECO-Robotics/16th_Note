@@ -41,8 +41,9 @@ feedback. Replay restores these inputs from a log without driving hardware.
 
 Real mode writes WPILOG data and publishes NetworkTables; simulation publishes
 NetworkTables. Replay reads a source log and writes a `_sim` output log.
-Driver joystick and game-piece request decisions do not have a dedicated
-logged input layer, limiting reproducibility of those decisions in replay.
+AdvantageKit automatically logs and replays Driver Station state and joystick
+inputs. The custom game-piece client reads live NetworkTables without a logged
+input layer, limiting reproducibility of vision-assist decisions in replay.
 
 ## Retained base components
 

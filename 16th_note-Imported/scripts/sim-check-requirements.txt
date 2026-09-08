@@ -1,0 +1,2 @@
+pyntcore==2026.2.2
+websocket-client==1.9.2
