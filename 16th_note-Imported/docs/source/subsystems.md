@@ -1,17 +1,28 @@
 # Subsystems
 
-## Drive
+## Active tank drivetrain
 
-The drive base is the most complete example in the project and acts as the template for larger mechanisms.
+`TankDrive` owns left/right output, input shaping, disabled protection, and
+AdvantageKit logging. Its real, simulation, and replay IO implementations
+follow the base project pattern. See {doc}`architecture` for the IO contract
+and {doc}`getting-started` for controls and wiring.
 
-Key responsibilities:
+The active game-piece integration uses `GamePieceVisionClient` to read remote
+normalized requests; it is separate from the inherited pose-estimation vision
+subsystem described below. `RobotContainer` consumes forward and turn only.
 
-- Read gyro and module state inputs.
-- Maintain odometry and fused pose estimation.
-- Convert chassis requests into per-module swerve setpoints.
-- Expose autonomous, characterization, and teleop-friendly command entry points.
+## Available base components
 
-## Flywheel
+The following reusable libraries are retained from `2026_Base_Bot` but are not
+instantiated by the current tank `RobotContainer`.
+
+### Swerve Drive
+
+The inherited `subsystems/drive/Drive` reads gyro/module state, estimates pose,
+and converts chassis requests into swerve module setpoints. Its PathPlanner
+and characterization support is specific to that drive stack.
+
+### Flywheel
 
 `Flywheel` is the simplest reusable motor subsystem. It is appropriate when one logical mechanism shares a single velocity target.
 
@@ -28,7 +39,7 @@ It supports:
 - Tunable feedforward and feedback gains
 - Slew-limited setpoint generation
 
-## PositionJoint
+### PositionJoint
 
 `PositionJoint` covers mechanisms that need bounded positional control, including pivots and elevators.
 
@@ -42,7 +53,7 @@ It supports:
 
 This is the subsystem you should reach for when the mechanism is fundamentally defined by where it should be, not just how fast it should spin.
 
-## Vision
+### Vision
 
 The vision stack accepts one or more camera implementations and filters observations before passing them into a consumer, usually the drive pose estimator.
 
@@ -52,7 +63,7 @@ Important behavior:
 - Scales measurement uncertainty from ambiguity, tag count, and target distance.
 - Logs accepted and rejected estimates for debugging.
 
-## Sensors and game-piece detection
+### Sensors and game-piece detection
 
 The repository also includes smaller building blocks for:
 

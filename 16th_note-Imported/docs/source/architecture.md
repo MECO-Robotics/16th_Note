@@ -1,73 +1,54 @@
-# Active 16th Note architecture
+# Architecture
 
-The active robot uses `TankDrive`, assembled in `RobotContainer`, with
-`TankDriveIOPWM` (real), `TankDriveIOSim` (physics), and `TankDriveIOReplay`
-(no hardware). `Robot` retains the base AdvantageKit lifecycle and command
-scheduler. The default command handles two-stick tank control and vision
-assist, runs motor output only in teleop, and stops on interruption.
-`Logger.processInputs("TankDrive", ...)` records feedback and applied output.
+## Lifecycle and command ownership
 
-PWM hardware has no measured position feedback. Autonomous therefore offers
-only a continuous stop; the base swerve paths and characterization commands
-are not registered. Simulation dimensions are estimates. See the project
-README for ports, controls and validation commands.
+`Robot` extends AdvantageKit's `LoggedRobot`, starts logging, creates
+`RobotContainer`, and runs `CommandScheduler` from `robotPeriodic()`.
+It schedules the chooser command on autonomous entry, cancels it for teleop,
+and cancels commands for test. Mode transitions explicitly stop the tank.
 
-## Upstream reusable architecture
+`RobotContainer` assembles `TankDrive` with the IO implementation selected by
+`frc.robot.constants.Constants.currentMode`. Its default `runEnd` command
+reads the two joysticks and the game-piece vision client, drives only during
+teleop, and stops when interrupted. The autonomous chooser registers a
+continuous stop command requiring the same subsystem.
 
+## Tank IO boundary
 
-## Design approach
+| Layer | Responsibility |
+| --- | --- |
+| `subsystems/tank/TankDrive` | Input shaping, mixing, voltage limits, disabled gate, logging |
+| `subsystems/tank/TankDriveIO` | Sensor/output contract and auto-logged input definition |
+| `subsystems/tank/TankDriveIOPWM` | PWM controllers, inversion, MotorSafety |
+| `sim/tank/TankDriveIOSim` | Differential-drive physics, simulated wheel state and heading |
+| `sim/replay/tank/TankDriveIOReplay` | No-op hardware boundary during log replay |
 
-The base project is organized around two ideas:
+Positive side voltage means forward motion for that side. Tank inputs use
+deadband and signed squaring; arcade input is linear. Voltage requests are
+clamped to ±12 V. Disabled or nonfinite voltage requests stop both sides.
 
-- Commands orchestrate robot behavior.
-- Subsystems hide hardware details behind IO interfaces.
+## Logging and feedback
 
-That separation keeps the code portable across real hardware, simulation, and log replay.
+`TankDrive.periodic()` updates IO inputs and calls
+`Logger.processInputs("TankDrive", inputs)`. Requested left/right voltage is
+recorded as `TankDrive/RequestedVolts`. Inputs include applied output voltage,
+wheel positions and velocities, heading, and `hasPositionFeedback`.
 
-## Top-level flow
+Real PWM IO reports commanded output multiplied by battery voltage; it is
+not an independent measurement of motor terminal voltage. It has no encoders
+or gyro and leaves `hasPositionFeedback` false. Simulation supplies model
+feedback. Replay restores these inputs from a log without driving hardware.
 
-`RobotContainer` is the assembly point for the robot. It:
+Real mode writes WPILOG data and publishes NetworkTables; simulation publishes
+NetworkTables. Replay reads a source log and writes a `_sim` output log.
+Driver joystick and game-piece request decisions do not have a dedicated
+logged input layer, limiting reproducibility of those decisions in replay.
 
-- Instantiates real, sim, or replay IO implementations based on the active mode.
-- Builds the `Drive` subsystem and wires PathPlanner autonomous support.
-- Registers characterization and SysId routines with the dashboard chooser.
-- Assigns controller bindings and default teleop behavior.
+## Retained base components
 
-`Robot` then delegates lifecycle behavior to the command scheduler.
-
-## IO layer pattern
-
-Most reusable mechanisms follow an IO-backed model:
-
-1. Define an IO interface for sensor and actuator access.
-2. Implement that interface for each hardware target.
-3. Keep subsystem logic independent from specific motor controllers.
-
-Examples in this repository include:
-
-- `DriveMotorIO*` and `AzimuthMotorIO*` for swerve modules.
-- `FlywheelIO*` for shooter or intake-style wheels.
-- `PositionJointIO*` for pivots and elevators.
-- `VisionIO*` for Limelight, PhotonVision, simulation, and replay sources.
-
-## Logging and tuning
-
-AdvantageKit is built into the project and used throughout the subsystem stack:
-
-- Inputs are logged via `Logger.processInputs(...)`.
-- Tunable gains are exposed with `LoggedTunableNumber`.
-- Replay mode allows validating code against recorded logs.
-
-This is the main reason the project can support aggressive iteration without coupling behavior to hardware availability.
-
-## Drive stack
-
-The swerve implementation provides:
-
-- A four-module `Drive` subsystem.
-- Pose estimation via `SwerveDrivePoseEstimator`.
-- PathPlanner integration through `AutoBuilder`.
-- SysId and feedforward characterization hooks.
-- Optional Phoenix and Spark odometry threads depending on motor vendor mix.
-
-The drive code is already set up for live gain updates and module limit tuning through logged values.
+The upstream swerve `Drive`, module IO, odometry threads, PathPlanner utilities,
+characterization commands, and reusable mechanism subsystems remain in the
+source tree. The active container does not instantiate them or register their
+autos. Adding tank pose estimation or closed-loop path following requires
+new measured feedback and differential-drive integration; existing swerve
+paths cannot simply be enabled in the chooser.

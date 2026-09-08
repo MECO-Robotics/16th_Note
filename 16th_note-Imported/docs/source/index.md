@@ -1,53 +1,27 @@
-# 2026 Base Bot
+# 16th Note — 2026 Tank Robot
 
-This site documents the base FRC robot project in this repository and uses the
-[Furo theme](https://github.com/pradyunsg/furo) for a clean, navigable reference.
-
-If you are new to the codebase, start with {doc}`getting-started`. It is written
-as a first-pass adoption guide, not just an API reference.
+This site documents the active `16th_note-Imported/` WPILib project for team
+8324. It is based on MECO's `2026_Base_Bot`, with a command-based tank
+drivetrain, AdvantageKit logging, and game-piece vision assist.
 
 ```{toctree}
 :maxdepth: 2
-:caption: Start Here
+:caption: Project guide
 
 getting-started
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Advanced
-
 architecture
 subsystems
 customizing
 ```
 
-## What this project gives you
+## Current capabilities
 
-- A command-based WPILib robot project targeting Java 17 and GradleRIO 2026.
-- A swerve drive stack with PathPlanner, AdvantageKit logging, and SysId hooks.
-- Reusable IO-backed subsystem patterns for flywheels, joints, sensors, piece detection, and vision.
-- Real, sim, and replay execution modes so development is not blocked on hardware.
+- Two-stick tank control with PWM Spark Max outputs.
+- Trigger-held vision assist with manual override and request freshness checks.
+- Separate real, physics simulation, and replay IO implementations.
+- Logged drivetrain inputs and requested voltages.
+- A stop-only autonomous chooser; no tank odometry or path following yet.
 
-## Student workflow
-
-For most students, the normal job is:
-
-1. Configure constants for the real robot.
-2. Assemble command compositions and controller bindings in `RobotContainer`.
-3. Tune and test.
-
-You usually do not need to rewrite subsystem internals or IO layers unless the
-robot has a genuinely new hardware requirement that the base patterns do not cover.
-
-## Start here
-
-- Read {doc}`getting-started` first.
-- Make your early changes in `frc.robot.constants` and `RobotContainer`.
-- Open the Advanced section only when you need deeper implementation detail.
-
-## Advanced reference
-
-- {doc}`architecture`
-- {doc}`subsystems`
-- {doc}`customizing`
+The inherited swerve code, PathPlanner assets, and mechanism libraries remain
+available for reuse. They are not instantiated by the active `RobotContainer`.
+Start with {doc}`getting-started` for wiring, controls, and build commands.

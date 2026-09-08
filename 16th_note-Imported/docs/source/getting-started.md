@@ -1,168 +1,103 @@
 # Getting Started
 
-This page is for teams adopting the base bot for the first time. If you only
-read one page before editing code, read this one.
+## Open the active project
 
-## The short version
+Install the WPILib 2026 toolchain, including its Java 17 JDK. Clone
+`MECO-Robotics/16th_Note` and open **16th_note-Imported/** in WPILib VS Code.
+The sibling `16th_note/` directory is the original project archive.
+Run all commands below from `16th_note-Imported/`.
 
-Most students only need to do two kinds of work:
-
-1. Configure the robot in `frc.robot.constants`.
-2. Assemble commands, controller bindings, and autos in `RobotContainer`.
-
-That is the normal workflow. Do not start by rewriting subsystems, IO classes,
-or drive internals.
-
-## First-week plan
-
-Use this sequence if you are new to the project:
-
-1. Build the code without changing anything.
-2. Read how `RobotContainer` assembles the robot.
-3. Replace placeholder constants and hardware IDs.
-4. Compose the robot behavior you want in `RobotContainer`.
-5. Keep the IO-backed structure intact until a real robot requirement forces a change.
-
-That order matters. Teams usually get into trouble by renaming packages and
-rewriting structure before they understand what is already reusable.
-
-## Default student workflow
-
-For most team members, the project should feel like a configuration-and-composition
-codebase:
-
-1. Configure the robot in `frc.robot.constants`.
-2. Instantiate or select the subsystems you need.
-3. Build commands and button bindings in `RobotContainer`.
-4. Tune values and iterate.
-
-That covers most day-to-day robot work. You should not need to edit low-level IO
-classes or rewrite reusable subsystem logic just to build a season robot.
-
-## Common first tasks
-
-If you are not sure what to do first, start here:
-
-1. Put in the correct CAN IDs and inversion values.
-2. Update gearing, offsets, limits, and presets.
-3. Remove bindings for mechanisms your robot does not have.
-4. Add a button that runs an intake, shooter, or scoring sequence.
-5. Add or select an autonomous routine.
-
-These are normal student tasks. They are much safer and more useful than
-starting in the low-level subsystem stack.
-
-## What to understand first
-
-Before editing subsystem code, make sure these ideas are clear:
-
-- Commands decide robot behavior.
-- Subsystems own mechanism logic.
-- IO classes isolate hardware-specific APIs.
-- Real, sim, and replay modes swap hardware access without rewriting subsystem behavior.
-
-If those boundaries make sense, the rest of the repository becomes much easier to extend.
-
-## Student-owned files
-
-The files most students should spend time in are:
-
-- `src/main/java/frc/robot/RobotContainer.java`
-- `src/main/java/frc/robot/constants`
-- `src/main/deploy`
-
-Those are the main surfaces for:
-
-- hardware IDs and mechanism constants
-- command compositions
-- controller bindings
-- autonomous chooser and named commands
-- PathPlanner assets
-
-## What not to touch early
-
-Avoid these until you have a concrete reason:
-
-- IO implementations for motor controllers and sensors
-- generic subsystem classes such as `Flywheel` and `PositionJoint`
-- drivetrain architecture
-- replay or sim plumbing
-
-Those layers are meant to stay reusable. Most student work should happen above them.
-
-## Repository layout
-
-The codebase is structured as a normal WPILib Java project:
-
-- `src/main/java/frc/robot`: robot code, commands, subsystems, utilities, and constants.
-- `src/main/deploy`: PathPlanner assets and deploy-time files copied to the roboRIO.
-- `vendordeps`: vendor JSON definitions for CTRE, REV, PhotonVision, AdvantageKit, and related libraries.
-- `sim`: simulation models and configuration assets.
-- `docs`: this documentation site.
-
-## Local setup
-
-1. Install the FRC 2026 WPILib toolchain and Java 17.
-2. Clone the repository.
-3. Open the project in VS Code or your preferred Java IDE.
-4. Build the robot code before making changes:
-
-```powershell
+```sh
 ./gradlew build
+./gradlew test
 ```
 
-5. If the build fails, fix the environment first. Do not start changing robot code until the unmodified project builds on your machine.
+On Windows, use `./gradlew.bat` in place of `./gradlew`.
+The build includes formatting, Java compilation, packaging, and tests.
+The team number is 8324 in `.wpilib/wpilib_preferences.json`.
 
-## Beginner customization checklist
+## Wiring and controls
 
-After the first successful build, the usual beginner changes are:
+The current configuration preserves the old robot's executable PWM setup.
+Actual wiring and inversion still need to be verified on the robot.
 
-1. Update hardware IDs and mechanism constants.
-2. Confirm which existing subsystems match your robot mechanisms.
-3. Remove or disable unused bindings and autos.
-4. Add your robot-specific command compositions in `RobotContainer`.
-5. Tune before deciding any subsystem rewrite is necessary.
+| Item | Configuration |
+| --- | --- |
+| Left Spark Max | PWM 0, not inverted |
+| Right Spark Max | PWM 1, inverted |
+| Left joystick | USB 0, negative Y drives forward |
+| Right joystick | USB 1, negative Y drives forward |
+| Vision assist | Hold the right joystick trigger |
+| Tank input shaping | 0.02 deadband, signed squaring |
+| Manual assist override | Either stick magnitude greater than 0.15 |
 
-Safe early targets:
+Wiring and simulation values live in
+`src/main/java/frc/robot/constants/drive/TankDriveConstants.java`.
+The old CAN IDs are not used. Check wheel direction with the robot lifted
+before floor testing.
 
-- constants under `frc.robot.constants`
-- controller bindings in `RobotContainer`
-- command compositions in `RobotContainer`
-- PathPlanner autos and deploy assets
+## Vision assist
 
-Changes to postpone until later:
+The camera name is `left`, configured in `frc/robot/Constants.java`.
+`GamePieceVisionClient` reads `GamePieceVision/v1/left` from NetworkTables.
+Assist requires the driver trigger, no manual override, an enabled robot,
+a connected camera, schema version 1, an active request, and a frame update
+no older than 250 ms. `RobotContainer` additionally restricts driving to teleop.
 
-- drive architecture rewrites
-- low-level motor-controller rewrites
-- collapsing multiple subsystems into one giant subsystem
-- removing sim or replay support because it "looks unnecessary"
+Forward and turn requests are each scaled by 0.35 and mixed without squaring.
+An active at-goal request stops the drivetrain. An invalid or stale request
+returns control to the sticks. Strafe is unused by the tank drivetrain.
 
-## Build the documentation
+## Simulation and replay
 
-Install the docs dependencies and render the site locally:
-
-```powershell
-cd docs
-py -m pip install -r requirements.txt
-py -m sphinx -b html source build/html
+```sh
+./gradlew simulateJava
 ```
 
-Open `docs/build/html/index.html` in a browser after the build completes.
+The base disables the simulation GUI by default to support log replay.
+Enable the GUI through WPILib's simulation selection when interactive driving
+is needed, assign joysticks to slots 0/1, and enable teleop in the simulated
+Driver Station. The physics model uses estimated gearing and dimensions;
+it is not calibrated to the real robot.
 
-## Runtime modes
+Runtime selection lives in `frc.robot.constants.Constants`, a different class
+from the robot-specific vision settings in `frc.robot.Constants`:
 
-The project switches behavior through `Constants.currentMode`:
+- On a roboRIO, `currentMode` always selects `REAL` and PWM hardware IO.
+- On desktop, `simMode = Mode.SIM` selects drivetrain physics.
+- Set `simMode = Mode.REPLAY` to replay an AdvantageKit log. Keep HAL simulation
+  extensions disabled and supply a log when prompted by the replay utility.
+  Replay IO allocates no motors; logged inputs are restored by AdvantageKit.
 
-- `REAL`: hardware IO implementations are active on the roboRIO.
-- `SIM`: physics-backed simulation classes are used on desktop.
-- `REPLAY`: IO is disabled and log replay implementations are used instead.
+Joystick and vision inputs are not recorded through a dedicated replay IO
+layer, so this does not guarantee identical replay of driver decisions.
 
-This split lets you write subsystem logic once and swap hardware access layers by mode.
+## Deploy and operate
 
-## Where to go next
+With team 8324 connectivity available, run:
 
-The rest of the docs are intentionally more advanced:
+```sh
+./gradlew deploy
+```
 
-- Read {doc}`architecture` to understand the assembly flow.
-- Read {doc}`subsystems` before adding a new mechanism.
-- Read {doc}`customizing` when you are ready to make the project team-specific.
+The workstation-specific Wi-Fi ownership helper is documented in
+`scripts/ROBOT-WIFI.md`. It can move the USB Wi-Fi adapter between Ubuntu and
+the Windows Driver Station VM; it does not deploy or enable the robot.
+
+Autonomous currently offers only **Do nothing**, which continuously stops
+both outputs. The inherited swerve paths are not configured for tank use.
+Disabled mode and interrupted driving commands stop the drivetrain. Real PWM
+outputs also use a 100 ms WPILib MotorSafety expiration.
+
+## Build these docs
+
+From the active project directory:
+
+```sh
+python3 -m venv /tmp/16th-note-docs-venv
+/tmp/16th-note-docs-venv/bin/python -m pip install -r docs/requirements.txt
+/tmp/16th-note-docs-venv/bin/python -m sphinx -W --keep-going -b html docs/source docs/build/html
+```
+
+Open `docs/build/html/index.html`. On Windows, create a virtual environment
+with `py -m venv` and use its `Scripts/python.exe` executable instead.

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-project = "2026 Base Bot"
-author = "Ninjineers"
-copyright = "2026, Ninjineers"
+project = "16th Note"
+author = "MECO Robotics"
+copyright = "2026, MECO Robotics; base documentation by Ninjineers"
 
 extensions = [
     "myst_parser",
@@ -17,7 +17,7 @@ templates_path = ["_templates"]
 exclude_patterns: list[str] = []
 
 html_theme = "furo"
-html_title = "2026 Base Bot"
+html_title = "16th Note — 2026 Tank Robot"
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 

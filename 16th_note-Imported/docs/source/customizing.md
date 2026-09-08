@@ -1,47 +1,54 @@
-# Customizing the Base Project
+# Customizing 16th Note
 
-## Forking strategy
+## Configuration locations
 
-Treat this repository as a starting point, not a finished robot application.
+| Change | File under `src/main/java/frc/robot/` |
+| --- | --- |
+| PWM ports, inversion, joystick ports, deadband, simulation estimates | `constants/drive/TankDriveConstants.java` |
+| Vision camera and assist limits | `Constants.java` |
+| Real/sim/replay mode selection | `constants/Constants.java` |
+| Commands, controls, mode-specific IO, autonomous chooser | `RobotContainer.java` |
 
-Recommended adoption flow:
+The two `Constants` classes have different responsibilities. Check the
+package before editing or importing one.
 
-1. Fork the repository for your team.
-2. Rename or replace example hardware constants.
-3. Keep reusable base patterns intact until a season requirement forces a change.
-4. Build robot-specific behavior in commands and higher-level coordination classes.
+## Changing motor hardware
 
-## Adding a new mechanism
+For PWM wiring changes, update `TankDriveConstants`. For CAN motor controllers,
+add a `TankDriveIO` implementation and select it in `RobotContainer`'s REAL
+branch. Keep positive voltage defined as forward for each side. Keep motor
+vendor APIs out of `TankDrive`, and preserve stop behavior and simulation/replay
+support. PWM port numbers are not CAN IDs.
 
-When adding a subsystem, prefer the same structure used by the existing code:
+## Adding feedback and autonomous
 
-1. Create an IO interface describing the hardware contract.
-2. Add real, sim, and replay implementations where practical.
-3. Keep the subsystem focused on control behavior and logging.
-4. Add command factories or dedicated commands for operator intent.
+The current robot has no configured real wheel sensors or gyro. Before adding
+closed-loop tank autonomous:
 
-This avoids hard-coding motor controller APIs into business logic.
+1. Implement measured wheel position/velocity and heading in real IO, with
+   correct units and signs.
+2. Measure drivetrain dimensions and conversion factors.
+3. Add differential-drive odometry or pose estimation and its reset behavior.
+4. Configure a differential-drive path controller and appropriate robot model.
+5. Register commands that require `TankDrive` and stop on completion or interruption.
+6. Validate in simulation and on the robot before enabling driving autos.
 
-## Extending drive and autonomous behavior
+The inherited swerve `AutoBuilder` setup and example paths are not active tank
+configuration. The chooser remains stop-only until that integration is done.
 
-The project already includes PathPlanner and characterization utilities. In practice that means:
+## Adding mechanisms
 
-- autonomous modes should usually be created in PathPlanner and selected through the chooser
-- drive tuning should happen through the existing gain and module-limit hooks
-- odometry quality should be improved through better constants and vision integration before rewriting the drive stack
+Follow the base structure: an IO interface, real/sim/replay implementations,
+a subsystem that handles behavior and logging, and commands for operator
+intent. Existing `Flywheel` and `PositionJoint` libraries can be reused when
+they match the hardware. Instantiate only needed mechanisms in `RobotContainer`.
 
-## Documentation workflow
+## Validation and documentation
 
-Keep the docs in sync with the code when you:
+Run `./gradlew build` after code changes. The tank tests cover direction,
+deadband, voltage limits, disabled output, cancellation, vision adapter limits
+and stop behavior, and simulation movement. They do not validate physical
+wiring or the full camera-to-robot integration.
 
-- add or remove subsystems
-- change the expected setup process
-- switch vendor libraries or hardware assumptions
-- introduce new simulation or logging workflows
-
-To rebuild the site:
-
-```powershell
-cd docs
-py -m sphinx -b html source build/html
-```
+Update the README and these pages when changing wiring, controls, logging,
+autonomous support, or setup. See {doc}`getting-started` for the docs build.
