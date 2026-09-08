@@ -12,7 +12,9 @@ public final class SwerveVisionDriveAdapter implements VisionDriveAdapter {
   private final double maxAngular;
 
   public SwerveVisionDriveAdapter(
-      RobotRelativeDrive drive, double maxLinearMetersPerSecond, double maxAngularRadiansPerSecond) {
+      RobotRelativeDrive drive,
+      double maxLinearMetersPerSecond,
+      double maxAngularRadiansPerSecond) {
     this.drive = drive;
     this.maxLinear = maxLinearMetersPerSecond;
     this.maxAngular = maxAngularRadiansPerSecond;
@@ -21,9 +23,7 @@ public final class SwerveVisionDriveAdapter implements VisionDriveAdapter {
   @Override
   public void apply(DriveRequest request) {
     drive.drive(
-        request.forward() * maxLinear,
-        request.strafe() * maxLinear,
-        request.turn() * maxAngular);
+        request.forward() * maxLinear, request.strafe() * maxLinear, request.turn() * maxAngular);
   }
 
   @Override
