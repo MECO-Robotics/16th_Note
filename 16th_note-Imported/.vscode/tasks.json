@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Robot Wi-Fi: Ubuntu (deploy)",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/robot-wifi.sh",
+      "args": [
+        "ubuntu"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Robot Wi-Fi: Windows (Driver Station)",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/robot-wifi.sh",
+      "args": [
+        "windows"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Robot Wi-Fi: Status",
+      "type": "process",
+      "command": "${workspaceFolder}/scripts/robot-wifi.sh",
+      "args": [
+        "status"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}
