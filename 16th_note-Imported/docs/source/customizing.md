@@ -4,7 +4,7 @@
 
 | Change | File under `src/main/java/frc/robot/` |
 | --- | --- |
-| PWM ports, inversion, joystick ports, deadband, simulation estimates | `constants/drive/TankDriveConstants.java` |
+| CAN IDs, inversion, controller port, deadband, simulation estimates | `constants/drive/TankDriveConstants.java` |
 | Vision camera and assist limits | `Constants.java` |
 | Real/sim/replay mode selection | `constants/Constants.java` |
 | Commands, controls, mode-specific IO, autonomous chooser | `RobotContainer.java` |
@@ -14,7 +14,7 @@ package before editing or importing one.
 
 ## Changing motor hardware
 
-For PWM wiring changes, update `TankDriveConstants`. For CAN motor controllers,
+For CAN ID and inversion changes, update `TankDriveConstants`. For other motor controllers,
 add a `TankDriveIO` implementation and select it in `RobotContainer`'s REAL
 branch. Keep positive voltage defined as forward for each side. Keep motor
 vendor APIs out of `TankDrive`, and preserve stop behavior and simulation/replay

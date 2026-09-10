@@ -17,7 +17,7 @@ customizing
 
 ## Current capabilities
 
-- Two-stick tank control with PWM Spark Max outputs.
+- PS4 arcade control with CAN SPARK MAX outputs.
 - Trigger-held vision assist with manual override and request freshness checks.
 - Separate real, physics simulation, and replay IO implementations.
 - Logged drivetrain inputs and requested voltages.

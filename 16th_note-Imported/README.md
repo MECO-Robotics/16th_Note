@@ -11,23 +11,22 @@ to preserve the existing VS Code workspace location.
 ## Tank operation
 
 - `Robot` uses the base's AdvantageKit logging and command scheduler.
-- `RobotContainer` selects `TankDriveIOPWM`, `TankDriveIOSim`, or
-  `TankDriveIOReplay` using `frc.robot.constants.Constants.currentMode`.
-- Wiring: PWM Spark Max left port 0, right port 1; right output inverted.
-  These preserve the old executable code, not the unused CAN constants.
+- `RobotContainer` calls `TankDriveIO.fromSparkMax(MotorType.kBrushless)`; the factory
+  selects real, simulation, or replay IO using `frc.robot.constants.Constants.currentMode`.
+- Wiring: brushless CAN SPARK MAX left ID 1, right ID 2; right output inverted.
   Check wiring and wheel direction with the robot lifted before driving.
-- Two joysticks on USB 0/1 control the left/right sides. Forward is negative Y;
+- One PS4 controller on USB 0 uses left-stick Y for forward/reverse and right-stick X for steering. Forward is negative Y;
   inputs use a 0.02 deadband and signed squaring.
-- Hold the right joystick trigger for the existing `GamePieceVision/v1/left`
-  assist. Moving either stick beyond 0.15 overrides assist. Requests must pass
+- Hold the PS4 R2 button for the existing `GamePieceVision/v1/left`
+  assist. Moving either drive axis beyond 0.15 overrides assist. Requests must pass
   the client's enabled, schema, connection and 250 ms freshness checks.
   Assist uses linear mixing capped at 35% output and stops at goal.
 - Commands own the drivetrain; interruption and disable stop both sides.
-  Teleop input is ignored in autonomous and test. PWM MotorSafety expires
+  Teleop input is ignored in autonomous and test. CAN IO MotorSafety expires
   after 100 ms without feeding.
 - Autonomous defaults to a continuous stop. The inherited swerve PathPlanner
-  paths are examples only and are not offered for this tank robot. Real PWM
-  IO has no encoders or gyro, so pose/path following is not configured.
+  paths are examples only and are not offered for this tank robot. Real CAN
+  IO has no calibrated wheel-position or heading feedback, so pose/path following is not configured.
 - Simulation has differential-drive physics with estimated dimensions in
   `TankDriveConstants`; these are not calibrated robot measurements. Replay
   restores logged IO inputs and never allocates motor hardware.

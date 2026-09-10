@@ -7,9 +7,10 @@
 It schedules the chooser command on autonomous entry, cancels it for teleop,
 and cancels commands for test. Mode transitions explicitly stop the tank.
 
-`RobotContainer` assembles `TankDrive` with the IO implementation selected by
-`frc.robot.constants.Constants.currentMode`. Its default `runEnd` command
-reads the two joysticks and the game-piece vision client, drives only during
+`RobotContainer` assembles `TankDrive` through `TankDriveIO.fromSparkMax(MotorType.kBrushless)`.
+The factory encapsulates real, simulation, and replay IO selection using
+`frc.robot.constants.Constants.currentMode`. It wires the default `TankTeleopCommand`.
+The command reads the PS4 controller and the game-piece vision client, drives only during
 teleop, and stops when interrupted. The autonomous chooser registers a
 continuous stop command requiring the same subsystem.
 
@@ -18,8 +19,8 @@ continuous stop command requiring the same subsystem.
 | Layer | Responsibility |
 | --- | --- |
 | `subsystems/tank/TankDrive` | Input shaping, mixing, voltage limits, disabled gate, logging |
-| `subsystems/tank/TankDriveIO` | Sensor/output contract and auto-logged input definition |
-| `subsystems/tank/TankDriveIOPWM` | PWM controllers, inversion, MotorSafety |
+| `subsystems/tank/TankDriveIO` | Sensor/output contract, auto-logged inputs, and mode-aware SPARK MAX IO factory |
+| `subsystems/tank/TankDriveIOSparkMax` | CAN SPARK MAX controllers, inversion, MotorSafety |
 | `sim/tank/TankDriveIOSim` | Differential-drive physics, simulated wheel state and heading |
 | `sim/replay/tank/TankDriveIOReplay` | No-op hardware boundary during log replay |
 
@@ -34,9 +35,8 @@ clamped to ±12 V. Disabled or nonfinite voltage requests stop both sides.
 recorded as `TankDrive/RequestedVolts`. Inputs include applied output voltage,
 wheel positions and velocities, heading, and `hasPositionFeedback`.
 
-Real PWM IO reports commanded output multiplied by battery voltage; it is
-not an independent measurement of motor terminal voltage. It has no encoders
-or gyro and leaves `hasPositionFeedback` false. Simulation supplies model
+Real CAN IO reports SPARK MAX applied output multiplied by bus voltage.
+Wheel distance and heading are not calibrated, so `hasPositionFeedback` remains false. Simulation supplies model
 feedback. Replay restores these inputs from a log without driving hardware.
 
 Real mode writes WPILOG data and publishes NetworkTables; simulation publishes

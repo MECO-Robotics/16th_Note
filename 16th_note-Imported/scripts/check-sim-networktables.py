@@ -58,7 +58,7 @@ def main():
             "enabled": nt.getEntry("/AdvantageKit/DriverStation/Enabled").getBoolean(False),
         }
 
-    def phase(name, expected, *, left=0, right=0, trigger=False, enabled=True,
+    def phase(name, expected, *, throttle=0, steering=0, trigger=False, enabled=True,
               auto=False, test=False, vision=False, fresh=True, goal=False,
               schema=1, connected=True, forward=1, turn=0):
         nonlocal sequence
@@ -73,8 +73,9 @@ def main():
         before = snapshot()
         deadline = time.monotonic() + 0.9
         while time.monotonic() < deadline:
-            send("Joystick", "0", {">axes": [0, -left], ">buttons": [False], ">povs": []})
-            send("Joystick", "1", {">axes": [0, -right], ">buttons": [trigger], ">povs": []})
+            send("Joystick", "0", {">axes": [0, -throttle, -steering, 0, 0, 0],
+                                   ">buttons": [False] * 7 + [trigger] + [False] * 6,
+                                   ">povs": [-1]})
             if fresh:
                 sequence += 1
                 nt.getEntry(root + "driveRequest/frameSequence").setInteger(sequence)
@@ -118,24 +119,24 @@ def main():
             time.sleep(0.05)
         if not nt.isConnected() or not snapshot()["feedback"]:
             raise RuntimeError("Local NT4 robot with simulated tank feedback was not found")
-        phase("disabled", [0, 0], enabled=False, left=1, right=1)
-        phase("tank forward", [12, 12], left=1, right=1)
-        phase("tank reverse", [-12, -12], left=-1, right=-1)
-        phase("tank turn", [-12, 12], left=-1, right=1)
-        phase("deadband", [0, 0], left=0.01, right=-0.01)
+        phase("disabled", [0, 0], enabled=False, throttle=1)
+        phase("arcade forward", [12, 12], throttle=1)
+        phase("arcade reverse", [-12, -12], throttle=-1)
+        phase("arcade turn", [-12, 12], steering=1)
+        phase("deadband", [0, 0], throttle=0.01, steering=-0.01)
         phase("vision forward", [4.2, 4.2], vision=True, trigger=True)
         phase("vision turn", [-2.1, 2.1], vision=True, trigger=True, forward=0, turn=0.5)
-        phase("manual override", [12, 12], vision=True, trigger=True, left=1, right=1)
+        phase("manual override", [12, 12], vision=True, trigger=True, throttle=1)
         phase("trigger released", [0, 0], vision=True)
         phase("at goal", [0, 0], vision=True, trigger=True, goal=True)
         phase("fresh before timeout", [4.2, 4.2], vision=True, trigger=True)
         phase("stale vision", [0, 0], vision=True, trigger=True, fresh=False)
         phase("wrong schema", [0, 0], vision=True, trigger=True, schema=2)
         phase("camera disconnected", [0, 0], vision=True, trigger=True, connected=False)
-        phase("autonomous holds stopped", [0, 0], auto=True, left=1, right=1, vision=True, trigger=True)
-        phase("test holds stopped", [0, 0], test=True, left=1, right=1)
-        phase("teleop resumes", [12, 12], left=1, right=1)
-        phase("disable stops", [0, 0], enabled=False, left=1, right=1)
+        phase("autonomous holds stopped", [0, 0], auto=True, throttle=1, vision=True, trigger=True)
+        phase("test holds stopped", [0, 0], test=True, throttle=1)
+        phase("teleop resumes", [12, 12], throttle=1)
+        phase("disable stops", [0, 0], enabled=False, throttle=1)
     finally:
         try:
             send("DriverStation", "", {">enabled": False, ">new_data": True})

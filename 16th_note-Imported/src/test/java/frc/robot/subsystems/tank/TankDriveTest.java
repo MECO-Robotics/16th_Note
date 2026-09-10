@@ -67,6 +67,60 @@ class TankDriveTest {
   }
 
   @Test
+  void ps4ArcadeControlsAndModeTransitions() {
+    var controller = new edu.wpi.first.wpilibj.PS4Controller(0);
+    var controllerSim = new edu.wpi.first.wpilibj.simulation.PS4ControllerSim(controller);
+    try (var vision = new org.mecorobotics.gamepiecevision.GamePieceVisionClient("teleop-test")) {
+      var command = new frc.robot.commands.drive.TankTeleopCommand(drive, controller, vision);
+      assertTrue(command.getRequirements().contains(drive));
+      controllerSim.setLeftY(-1);
+      controllerSim.notifyNewData();
+      command.execute();
+      assertEquals(12, io.left);
+      assertEquals(12, io.right);
+
+      controllerSim.setLeftY(0);
+      controllerSim.setRightX(1);
+      controllerSim.notifyNewData();
+      command.execute();
+      assertEquals(12, io.left);
+      assertEquals(-12, io.right);
+
+      controllerSim.setRightX(0.01);
+      controllerSim.notifyNewData();
+      command.execute();
+      assertEquals(0, io.left);
+      assertEquals(0, io.right);
+
+      controllerSim.setLeftY(-1);
+      controllerSim.notifyNewData();
+      command.execute();
+      command.end(true);
+      assertEquals(0, io.left);
+      assertEquals(0, io.right);
+
+      DriverStationSim.setAutonomous(true);
+      DriverStationSim.notifyNewData();
+      command.execute();
+      assertEquals(0, io.left);
+      assertEquals(0, io.right);
+    }
+  }
+
+  @Test
+  void manualArcadeMixesAndSquaresInputs() {
+    drive.arcadeDriveManual(1, 1);
+    assertEquals(0, io.left);
+    assertEquals(12, io.right);
+    drive.arcadeDriveManual(-1, 0);
+    assertEquals(-12, io.left);
+    assertEquals(-12, io.right);
+    drive.arcadeDriveManual(0.51, 0);
+    assertEquals(3, io.left, 1e-9);
+    assertEquals(3, io.right, 1e-9);
+  }
+
+  @Test
   void outputsAreBoundedAndNonfiniteVoltageStopsBothSides() {
     drive.setVoltage(99, -99);
     assertEquals(12, io.left);

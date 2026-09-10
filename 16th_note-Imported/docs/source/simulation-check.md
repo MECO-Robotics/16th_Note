@@ -51,8 +51,7 @@ normal build/simulation configuration. Do not enable this extension for replay.
 | `/AdvantageKit/TankDrive/HeadingRadians` | Simulated heading, positive counterclockwise |
 | `/AdvantageKit/TankDrive/HasPositionFeedback` | True for physics simulation |
 | `/AdvantageKit/DriverStation/Enabled` | Logged enabled state |
-| `/AdvantageKit/DriverStation/Joystick0/AxisValues` | Logged left joystick axes |
-| `/AdvantageKit/DriverStation/Joystick1/AxisValues` | Logged right joystick axes |
+| `/AdvantageKit/DriverStation/Joystick0/AxisValues` | Logged PS4 axes (left Y: 1, right X: 2) |
 | `/SmartDashboard/Auto Choices/options` | Stop-only autonomous option |
 
 The checker publishes camera state below `/GamePieceVision/v1/left` and

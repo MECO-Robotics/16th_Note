@@ -18,16 +18,15 @@ The team number is 8324 in `.wpilib/wpilib_preferences.json`.
 
 ## Wiring and controls
 
-The current configuration preserves the old robot's executable PWM setup.
+The drivetrain uses two CAN SPARK MAX controllers.
 Actual wiring and inversion still need to be verified on the robot.
 
 | Item | Configuration |
 | --- | --- |
-| Left Spark Max | PWM 0, not inverted |
-| Right Spark Max | PWM 1, inverted |
-| Left joystick | USB 0, negative Y drives forward |
-| Right joystick | USB 1, negative Y drives forward |
-| Vision assist | Hold the right joystick trigger |
+| Left Spark Max | CAN 1, not inverted |
+| Right Spark Max | CAN 2, inverted |
+| PS4 controller | USB 0; left-stick Y drives forward/reverse, right-stick X steers |
+| Vision assist | Hold the PS4 R2 button |
 | Tank input shaping | 0.02 deadband, signed squaring |
 | Manual assist override | Either stick magnitude greater than 0.15 |
 
@@ -42,7 +41,7 @@ The camera name is `left`, configured in `frc/robot/Constants.java`.
 `GamePieceVisionClient` reads `GamePieceVision/v1/left` from NetworkTables.
 Assist requires the driver trigger, no manual override, an enabled robot,
 a connected camera, schema version 1, an active request, and a frame update
-no older than 250 ms. `RobotContainer` additionally restricts driving to teleop.
+no older than 250 ms. `TankTeleopCommand` additionally restricts driving to teleop.
 
 Forward and turn requests are each scaled by 0.35 and mixed without squaring.
 An active at-goal request stops the drivetrain. An invalid or stale request
@@ -56,14 +55,14 @@ returns control to the sticks. Strafe is unused by the tank drivetrain.
 
 The base disables the simulation GUI by default to support log replay.
 Enable the GUI through WPILib's simulation selection when interactive driving
-is needed, assign joysticks to slots 0/1, and enable teleop in the simulated
+is needed, assign the PS4 controller to slot 0, and enable teleop in the simulated
 Driver Station. The physics model uses estimated gearing and dimensions;
 it is not calibrated to the real robot.
 
 Runtime selection lives in `frc.robot.constants.Constants`, a different class
 from the robot-specific vision settings in `frc.robot.Constants`:
 
-- On a roboRIO, `currentMode` always selects `REAL` and PWM hardware IO.
+- On a roboRIO, `currentMode` always selects `REAL` and CAN hardware IO.
 - On desktop, `simMode = Mode.SIM` selects drivetrain physics.
 - Set `simMode = Mode.REPLAY` to replay an AdvantageKit log. Keep HAL simulation
   extensions disabled and supply a log when prompted by the replay utility.
@@ -88,7 +87,7 @@ the Windows Driver Station VM; it does not deploy or enable the robot.
 
 Autonomous currently offers only **Do nothing**, which continuously stops
 both outputs. The inherited swerve paths are not configured for tank use.
-Disabled mode and interrupted driving commands stop the drivetrain. Real PWM
+Disabled mode and interrupted driving commands stop the drivetrain. Real CAN
 outputs also use a 100 ms WPILib MotorSafety expiration.
 
 ## Build these docs

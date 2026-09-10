@@ -30,6 +30,13 @@ public final class TankDrive extends SubsystemBase {
     setVoltage(
         speeds.left * TankDriveConstants.MAX_VOLTS, speeds.right * TankDriveConstants.MAX_VOLTS);
   }
+  /** Driver arcade inputs: forward and counterclockwise turn, with deadband and squaring. */
+  public void arcadeDriveManual(double forward, double turn) {
+    var speeds = DifferentialDrive.arcadeDriveIK(deadband(forward), deadband(turn), true);
+    setVoltage(
+        speeds.left * TankDriveConstants.MAX_VOLTS, speeds.right * TankDriveConstants.MAX_VOLTS);
+  }
+
   /**
    * Normalized forward and counterclockwise turn, matching the original vision adapter convention.
    */

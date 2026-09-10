@@ -8,7 +8,12 @@
       "args": [
         "ubuntu"
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
     },
     {
       "label": "Robot Wi-Fi: Windows (Driver Station)",
@@ -17,7 +22,12 @@
       "args": [
         "windows"
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
     },
     {
       "label": "Robot Wi-Fi: Status",
@@ -26,7 +36,12 @@
       "args": [
         "status"
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
     }
   ]
 }
