@@ -188,9 +188,10 @@ public final class FuelSequencer {
         arrivedSince = Double.NaN;
       }
     } else if (isShooting()) {
-      // Never retract on trigger release or infer that the hopper is empty without a sensor.
-      hold(feedback.pivotDegrees(), now);
-      enter(State.IDLE, now);
+      // Releasing shoot ends feeding and returns to pickup position, even after agitation.
+      // This is an operator request, not an inference that the hopper is empty.
+      goal(settings.intakeDegrees(), now);
+      enter(State.DEPLOYING, now);
     } else if (intakePressed) {
       goal(settings.intakeDegrees(), now);
       enter(State.DEPLOYING, now);

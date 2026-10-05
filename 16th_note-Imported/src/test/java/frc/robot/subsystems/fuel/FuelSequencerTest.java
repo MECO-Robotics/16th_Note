@@ -103,21 +103,56 @@ class FuelSequencerTest {
     assertEquals(settings.feedDegrees(), output.pivotDegrees());
   }
 
-  @Test
-  void releasingShootStopsWheelAndHoldsWithoutRetractingEvenIfIntakeStillHeld() {
-    var sequence = armed();
-    tick(sequence, 0.02, true, true, 0, 3000);
-    tick(sequence, 0.23, true, true, 0, 3000);
-    var output = tick(sequence, 0.25, true, false, 25, 3000);
-    assertEquals(State.IDLE, sequence.state());
-    assertEquals(0, output.shooterPrimaryMotorRpm());
-    assertEquals(0, output.intakeDuty());
-    assertEquals(25, output.pivotDegrees());
-    output = tick(sequence, 0.27, true, false, 25, 2800);
-    assertEquals(25, output.pivotDegrees());
-    tick(sequence, 0.29, false, false, 25, 2600);
-    output = tick(sequence, 0.31, true, false, 25, 2400);
+  @ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({
+    "false,false",
+    "false,true",
+    "true,false",
+    "true,true"
+  })
+  void releasingShootReturnsDownWithOrWithoutAgitation(boolean agitate, boolean intakeHeld) {
+    var sequence = new FuelSequencer(settings.withAgitation(agitate));
+    tick(sequence, 0, false, false, settings.intakeDegrees(), 0);
+    tick(sequence, .02, intakeHeld, true, settings.intakeDegrees(), 3000);
+    tick(sequence, .23, intakeHeld, true, settings.feedDegrees(), 3000);
+    tick(sequence, .85, intakeHeld, true, settings.feedDegrees(), 3000);
+    assertEquals(agitate ? State.AGITATING_DOWN : State.FEEDING, sequence.state());
+    var output = tick(sequence, .87, intakeHeld, false, 60, 3000);
+    assertEquals(State.DEPLOYING, sequence.state());
     assertEquals(settings.intakeDegrees(), output.pivotDegrees());
+    assertEquals(0, output.shooterPrimaryMotorRpm());
+    assertEquals(0, output.shooterSecondaryMotorRpm());
+    assertEquals(0, output.indexerDuty());
+    assertEquals(0, output.intakeDuty());
+    output = tick(sequence, .89, intakeHeld, false, 40, 2800);
+    assertEquals(settings.intakeDegrees(), output.pivotDegrees());
+    output = tick(sequence, 1.1, intakeHeld, false, settings.intakeDegrees(), 0);
+    assertEquals(intakeHeld ? State.INTAKING : State.DEPLOYED, sequence.state());
+    assertEquals(intakeHeld ? settings.intakeDutyCycle() : 0, output.intakeDuty());
+  }
+
+  @Test
+  void returnAfterShootStillHonorsDisableFaultsAndMotionTimeout() {
+    for (int scenario = 0; scenario < 3; scenario++) {
+      var sequence = armed();
+      tick(sequence, .02, false, true, 60, 0);
+      tick(sequence, .04, false, false, 60, 0);
+      assertEquals(State.DEPLOYING, sequence.state());
+      Output output;
+      if (scenario == 0) {
+        output = sequence.update(.06, false, true, false, false, false, feedback(60, 0));
+        assertEquals(State.DISABLED, sequence.state());
+      } else if (scenario == 1) {
+        output =
+            sequence.update(
+                .06, true, true, false, false, false, new Feedback(true, true, false, 60, 0, 0, 0));
+        assertEquals(State.FAULT, sequence.state());
+      } else {
+        output = tick(sequence, 3.1, false, false, 60, 0);
+        assertEquals(State.FAULT, sequence.state());
+      }
+      assertEquals(Output.stopped(), output);
+    }
   }
 
   @Test

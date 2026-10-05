@@ -33,7 +33,10 @@ shaft coupling, directions and ratios still require confirmation.
 Pivot feedback is **intake degrees**, calculated from raw motor rotations:
 `degrees = motor rotations × feedback sign × 360 / 20`. The confirmed ratio is
 20:1, so one motor turn corresponds to 18 intake degrees. Zero is the verified
-upper frame-contact stop; positive degrees lower the intake. The normal feed
+upper frame-contact stop; positive degrees lower the intake. Confirmed total
+stowed-to-deployed travel is **160 degrees**, so the deployed target is 160.
+The real dashboard prefills `IntakeDegrees` and `Pivot/MaxDegrees` with 160;
+configuration still requires disabled apply and the remaining hardware settings. The normal feed
 position must be greater than zero, clear of the stop, and less than the
 lowered intake position.
 
@@ -43,6 +46,18 @@ positive displayed speed means the intended shooting direction. Verify the
 relationship among motor inversion, encoder sign and commanded direction on
 hardware before confirming directions. Intake rollers and indexer use bounded
 open-loop output, so their ratios need not be known yet.
+
+For an unconfigured real robot, `Fuel/Config/PrimaryMotorRpm` and
+`Fuel/Config/SecondaryMotorRpm` now start at **2828.57 motor RPM**. This copies
+2026-Rebuilt's close-hub motor speed: its 30 wheel RPS preset times 60 times its
+22/14 motor-to-wheel ratio. That ratio belongs to REBUILT, not 16th Note; the
+result is only a provisional motor-speed starting point, not a calibrated shot
+or a promise of equal wheel speed. Both targets can be tuned independently.
+Their checked-in starting values are `INITIAL_SHOOTER_PRIMARY_MOTOR_RPM` and
+`INITIAL_SHOOTER_SECONDARY_MOTOR_RPM` in `FuelConstants`. Current limits,
+directions, coupling, gains, tolerances and the remaining sequence settings
+still require configuration before shooting. Simulation retains its separate
+3000 motor-RPM example and trajectory calibration.
 
 `Fuel/Config/` contains staged dashboard settings. They have no effect until
 **Fuel/Apply configuration (disabled)** is invoked. The operation rejects enabled
@@ -148,13 +163,15 @@ Release both bumpers after enable/reconnection/interruption before operating.
 | LB / L1 | Lower intake; rollers run while held once deployed |
 | Release LB / L1 | Finish lowering, stay down, stop rollers |
 | RB / R1 | Spin both shooters; wait for stable readiness, then raise intake and run indexer |
-| Release RB / R1 | Stop shooter requests and indexer; hold current intake position |
+| Release RB / R1 | Stop shooter requests and indexer immediately; return intake fully down |
 | Both bumpers | Shooting wins; intake rollers stay off |
 
 A drop in either shooter's speed immediately removes the indexer request and
 pauses raising until both recover. Averaging speeds cannot establish readiness.
-If intake remains held after releasing shoot, release and press intake again to
-redeploy. Driving and RT/R2 vision assist retain their previous mappings.
+Releasing shoot returns the intake down even after agitation or during spin-up.
+Rollers remain stopped unless LB/L1 is held, and only run once the intake reaches
+the deployed target. Disable, faults and motion timeout still stop the return.
+Driving and RT/R2 vision assist retain their previous mappings.
 
 Faults and timeouts neutralize fuel outputs and latch until disabled. A controller
 connection failure may also invalidate the intake reference. A 100 ms request
@@ -374,3 +391,26 @@ unchanged.
 remain in a saved dashboard; it is no longer read by the simulator and can be
 removed. The model assumes the fuel exits at the stated hood angle; actual exit
 speed and trajectory still require hardware measurements.
+
+
+## Detailed CAD intake animation
+
+`sim/Robot_16thNoteDetailed` contains the combined October 5 drive-base and
+shooter meshes plus a separate movable intake mesh. Select **16th Note Detailed**
+in AdvantageScope, then add
+`NT:/AdvantageKit/RealOutputs/Visualization/16thNote/ComponentPoses` as a
+**Component** child of that robot. The source type must be **Pose3d[]**.
+The older `Intake` Mechanism2d source is an optional stick diagram; remove that
+child if you only want the detailed intake. Restart simulation to publish the
+new topic. On another laptop, copy/use this repository's `sim` folder as the
+custom asset folder; do not use a stale copy from the REBUILT repository.
+
+The user confirmed the CAD pose is lowered for pickup. The animation rotates
+the intake plates/roller/backer/outer belt around the shared jackshaft axis;
+fixed motor-to-shaft belts remain stationary. The animation uses the confirmed **160-degree stowed-to-deployed travel**.
+At zero it is stowed; at 160 it matches the lowered CAD export. The SIM feed
+target remains 5 degrees clear of the upper stop and still requires physical
+validation. Verify mounting alignment before treating the model as a
+physical-motion reference. `FuelVisualization` holds only visualization
+offsets; no real controller configuration, pickup physics, or shooter ballistics
+are derived from these meshes. See the asset README for geometry assumptions.

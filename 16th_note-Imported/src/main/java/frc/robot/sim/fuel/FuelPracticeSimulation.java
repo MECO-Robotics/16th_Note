@@ -99,6 +99,9 @@ public final class FuelPracticeSimulation {
     Logger.recordOutput("Simulation/Fuel/GroundCount", world.groundCount());
     intake.setAngle(90 - fuel.pivotDegrees());
     Logger.recordOutput("Visualization/16thNote/Intake", mechanism);
+    Logger.recordOutput(
+        "Visualization/16thNote/ComponentPoses",
+        FuelVisualization.componentPoses(fuel.pivotDegrees()));
     Logger.recordOutput("Simulation/Fuel/GroundPoses", world.groundPoses());
     Logger.recordOutput("Simulation/Fuel/ProjectilePoses", world.projectilePoses());
     Logger.recordOutput("Simulation/Fuel/HeldPoses", world.heldPoses(pose));

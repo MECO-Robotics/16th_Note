@@ -1,7 +1,20 @@
 package frc.robot.constants.fuel;
 
-/** Sequence settings are mechanism units, never motor rotations. */
+/** Pivot settings use intake degrees; shooter targets use motor RPM. */
 public final class FuelConstants {
+  /**
+   * Provisional motor-speed starting point from 2026-Rebuilt's close-hub preset: 30 wheel RPS * 60
+   * * its 22/14 motor-to-wheel ratio. This is NOT a measured 16th Note ratio or a guarantee of the
+   * same wheel/ball speed. Tune each motor separately.
+   */
+  public static final double INITIAL_SHOOTER_PRIMARY_MOTOR_RPM = 30.0 * 60.0 * (22.0 / 14.0);
+
+  public static final double INITIAL_SHOOTER_SECONDARY_MOTOR_RPM =
+      INITIAL_SHOOTER_PRIMARY_MOTOR_RPM;
+
+  /** Confirmed stowed-to-deployed intake travel; upper/stowed reference is zero. */
+  public static final double INTAKE_DEPLOYED_DEGREES = 160;
+
   public static final FuelConfiguration REAL = FuelConfiguration.unconfigured();
 
   // Reserved IDs only; this does not configure or instantiate any hardware.
@@ -13,7 +26,25 @@ public final class FuelConstants {
 
   /** Example values for software simulation only; none are calibrated robot measurements. */
   public static final Settings SIMULATION =
-      new Settings(0, 80, 70, 5, 25, 2, 3000, 150, 0.2, 4, 3, 0.6, 0.15, 3, false, 0.1, 0.5, 0.35);
+      new Settings(
+          0,
+          INTAKE_DEPLOYED_DEGREES,
+          INTAKE_DEPLOYED_DEGREES,
+          5,
+          25,
+          2,
+          3000,
+          150,
+          0.2,
+          4,
+          3,
+          0.6,
+          0.15,
+          3,
+          false,
+          0.1,
+          0.5,
+          0.35);
 
   public record Settings(
       double minDegrees,

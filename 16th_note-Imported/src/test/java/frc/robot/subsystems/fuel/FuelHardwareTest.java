@@ -170,7 +170,7 @@ class FuelHardwareTest {
     io.updateInputs(inputs);
     assertEquals(18, inputs.pivotDegrees, 1e-9);
     assertEquals(0, motors.get(Role.PIVOT).min);
-    assertEquals(80.0 / 18, motors.get(Role.PIVOT).max, 1e-9);
+    assertEquals(160.0 / 18, motors.get(Role.PIVOT).max, 1e-9);
     io.stop();
     io.updateInputs(inputs);
     assertTrue(inputs.referenced); // ordinary disabled stop preserves reference
@@ -328,7 +328,7 @@ class FuelHardwareTest {
             new FuelConfiguration(
                 devices, c.coupling(), false, false, c.pivot(), c.sequence(), c.auto()));
     reference(io);
-    assertEquals(-80.0 / 18, motors.get(Role.PIVOT).min, 1e-9);
+    assertEquals(-160.0 / 18, motors.get(Role.PIVOT).min, 1e-9);
     assertEquals(0, motors.get(Role.PIVOT).max);
     motors.get(Role.PIVOT).rotations = -1;
     io.updateInputs(inputs);

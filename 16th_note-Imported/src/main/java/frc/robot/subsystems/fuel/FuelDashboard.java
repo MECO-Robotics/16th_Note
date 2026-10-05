@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.constants.fuel.FuelConfiguration;
 import frc.robot.constants.fuel.FuelConfiguration.*;
+import frc.robot.constants.fuel.FuelConstants;
 import frc.robot.constants.fuel.FuelConstants.Settings;
 import java.util.EnumMap;
 
@@ -44,14 +45,22 @@ public final class FuelDashboard {
     put("Pivot/GravityVolts", p.gravityVolts());
     put("Pivot/MaxVelocity", p.maxDegreesPerSecond());
     put("Pivot/MaxAcceleration", p.maxDegreesPerSecondSquared());
-    put("Pivot/MaxDegrees", p.maxDegrees());
+    put(
+        "Pivot/MaxDegrees",
+        p.travelKnown() ? p.maxDegrees() : FuelConstants.INTAKE_DEPLOYED_DEGREES);
     Settings s = initial.sequence();
-    put("IntakeDegrees", s == null ? 0 : s.intakeDegrees());
+    put("IntakeDegrees", s == null ? FuelConstants.INTAKE_DEPLOYED_DEGREES : s.intakeDegrees());
     put("FeedDegrees", s == null ? 0 : s.feedDegrees());
     put("AgitationDegrees", s == null ? 0 : s.agitationDegrees());
     put("PositionToleranceDegrees", s == null ? 0 : s.positionToleranceDegrees());
-    put("PrimaryMotorRpm", s == null ? 0 : s.shooterPrimaryMotorRpm());
-    put("SecondaryMotorRpm", s == null ? 0 : s.shooterSecondaryMotorRpm());
+    put(
+        "PrimaryMotorRpm",
+        s == null ? FuelConstants.INITIAL_SHOOTER_PRIMARY_MOTOR_RPM : s.shooterPrimaryMotorRpm());
+    put(
+        "SecondaryMotorRpm",
+        s == null
+            ? FuelConstants.INITIAL_SHOOTER_SECONDARY_MOTOR_RPM
+            : s.shooterSecondaryMotorRpm());
     put("PrimaryToleranceMotorRpm", s == null ? 0 : s.primarySpeedToleranceMotorRpm());
     put("SecondaryToleranceMotorRpm", s == null ? 0 : s.secondarySpeedToleranceMotorRpm());
     put("ReadySeconds", s == null ? 0 : s.readySeconds());
