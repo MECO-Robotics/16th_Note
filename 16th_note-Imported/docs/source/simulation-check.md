@@ -1,5 +1,8 @@
 # Live NetworkTables simulation check
 
+For a harness sending PS4 axes, set `TankDriveConstants.USE_XBOX_CONTROLLER = false`
+before launching the simulator; the default Xbox layout uses different axis indices.
+
 This check runs the actual robot program and uses a separate NT4 client to
 observe drivetrain outputs and simulated feedback. A HAL WebSocket connection
 supplies simulated Driver Station modes and joystick packets; camera requests
@@ -51,7 +54,7 @@ normal build/simulation configuration. Do not enable this extension for replay.
 | `/AdvantageKit/TankDrive/HeadingRadians` | Simulated heading, positive counterclockwise |
 | `/AdvantageKit/TankDrive/HasPositionFeedback` | True for physics simulation |
 | `/AdvantageKit/DriverStation/Enabled` | Logged enabled state |
-| `/AdvantageKit/DriverStation/Joystick0/AxisValues` | Logged PS4 axes (left Y: 1, right X: 2) |
+| `/AdvantageKit/DriverStation/Joystick0/AxisValues` | Logged axes (left Y: 1; right X: Xbox 4, PS4 2) |
 | `/SmartDashboard/Auto Choices/options` | Stop-only autonomous option |
 
 The checker publishes camera state below `/GamePieceVision/v1/left` and

@@ -21,6 +21,8 @@ public interface TankDriveIO {
     public double leftVelocityMetersPerSecond = 0.0;
     public double rightVelocityMetersPerSecond = 0.0;
     public double headingRadians = 0.0;
+    public edu.wpi.first.math.geometry.Pose2d simulatedPose =
+        new edu.wpi.first.math.geometry.Pose2d();
   }
 
   /** Creates the real, simulated, or replay IO for a SPARK MAX tank drivetrain. */
@@ -35,6 +37,9 @@ public interface TankDriveIO {
   default void updateInputs(TankDriveIOInputs inputs) {}
 
   default void setVoltage(double leftVolts, double rightVolts) {}
+
+  /** Simulation reset only; real/replay implementations intentionally do nothing. */
+  default void resetSimulationPose(edu.wpi.first.math.geometry.Pose2d pose) {}
 
   default void stop() {
     setVoltage(0.0, 0.0);

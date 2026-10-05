@@ -5,14 +5,27 @@
 `Robot` extends AdvantageKit's `LoggedRobot`, starts logging, creates
 `RobotContainer`, and runs `CommandScheduler` from `robotPeriodic()`.
 It schedules the chooser command on autonomous entry, cancels it for teleop,
-and cancels commands for test. Mode transitions explicitly stop the tank.
+and cancels commands for test. Mode transitions explicitly stop the tank and fuel mechanism.
 
 `RobotContainer` assembles `TankDrive` through `TankDriveIO.fromSparkMax(MotorType.kBrushless)`.
 The factory encapsulates real, simulation, and replay IO selection using
 `frc.robot.constants.Constants.currentMode`. It wires the default `TankTeleopCommand`.
-The command reads the PS4 controller and the game-piece vision client, drives only during
+The command reads the selected Xbox/PS4 layout through `DriverControls` and the game-piece vision client, drives only during
 teleop, and stops when interrupted. The autonomous chooser registers a
 continuous stop command requiring the same subsystem.
+
+## Fuel coordination
+
+`RobotContainer` also creates `FuelSystem` with its own default command and
+subsystem requirement. `FuelSequencer` coordinates the pivot, rollers and shooter
+without requiring the drivetrain in teleop. Test commissioning and preload auto
+require both fuel and drivetrain. SIM selects `FuelIOSim`; REAL selects
+`FuelIOSparkMax`, which only allocates devices with valid electrical configuration;
+REPLAY uses no-op hardware IO. `FuelConfiguration` separates real settings from
+simulation examples. Explicit disabled dashboard actions apply snapshots and
+reference the upper stop. The fuel
+subsystem logs feedback, operator requests and sequence time together. See
+{doc}`fuel-system` for the operating sequence and remaining hardware integration.
 
 ## Tank IO boundary
 
@@ -49,7 +62,8 @@ input layer, limiting reproducibility of vision-assist decisions in replay.
 
 The upstream swerve `Drive`, module IO, odometry threads, PathPlanner utilities,
 characterization commands, and reusable mechanism subsystems remain in the
-source tree. The active container does not instantiate them or register their
-autos. Adding tank pose estimation or closed-loop path following requires
+source tree. The active container does not instantiate those inherited subsystem wrappers or
+register their autos. The fuel IO adapter uses the established REVLib patterns
+with its own configuration checks, reference validity and shared stop policy. Adding tank pose estimation or closed-loop path following requires
 new measured feedback and differential-drive integration; existing swerve
 paths cannot simply be enabled in the chooser.

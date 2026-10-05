@@ -10,6 +10,7 @@ drivetrain, AdvantageKit logging, and game-piece vision assist.
 
 getting-started
 simulation-check
+fuel-system
 architecture
 subsystems
 customizing
@@ -17,11 +18,15 @@ customizing
 
 ## Current capabilities
 
-- PS4 arcade control with CAN SPARK MAX outputs.
+- Xbox/PS4 arcade control with CAN SPARK MAX outputs.
 - Trigger-held vision assist with manual override and request freshness checks.
 - Separate real, physics simulation, and replay IO implementations.
 - Logged drivetrain inputs and requested voltages.
-- A stop-only autonomous chooser; no tank odometry or path following yet.
+- Five-NEO SPARK MAX fuel IO, intake referencing and bounded Test-mode commissioning.
+- Coordinated intake/shooter/indexer sequence and optional bounded agitation.
+- Fuel fault handling and diagnostics; real configuration starts incomplete.
+- Default stop-only auto plus optional verified timed backing and preload shooting.
+- No tank odometry or path following yet.
 
 The inherited swerve code, PathPlanner assets, and mechanism libraries remain
 available for reuse. They are not instantiated by the active `RobotContainer`.

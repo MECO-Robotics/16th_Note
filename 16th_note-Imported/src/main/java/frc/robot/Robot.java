@@ -30,6 +30,8 @@ public class Robot extends LoggedRobot {
   private RobotContainer robotContainer;
 
   public Robot() {
+    // Commissioning is command-owned; LiveWindow would disable the scheduler in Test mode.
+    enableLiveWindowInTest(false);
     // Record metadata
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
     Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
@@ -145,6 +147,7 @@ public class Robot extends LoggedRobot {
     robotContainer.stop();
     // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
+    robotContainer.startCommissioning();
   }
 
   /** This function is called periodically during test mode. */
@@ -157,5 +160,7 @@ public class Robot extends LoggedRobot {
 
   /** This function is called periodically whilst in simulation. */
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+    robotContainer.simulationPeriodic();
+  }
 }

@@ -15,16 +15,22 @@ to preserve the existing VS Code workspace location.
   selects real, simulation, or replay IO using `frc.robot.constants.Constants.currentMode`.
 - Wiring: brushless CAN SPARK MAX left ID 1, right ID 2; right output inverted.
   Check wiring and wheel direction with the robot lifted before driving.
-- One PS4 controller on USB 0 uses left-stick Y for forward/reverse and right-stick X for steering. Forward is negative Y;
+- One Xbox or PS4 controller on USB 0 uses left-stick Y for forward/reverse and right-stick X for steering. Forward is negative Y;
   inputs use a 0.02 deadband and signed squaring.
-- Hold the PS4 R2 button for the existing `GamePieceVision/v1/left`
+- Hold Xbox RT past halfway or the PS4 R2 button for the existing `GamePieceVision/v1/left`
   assist. Moving either drive axis beyond 0.15 overrides assist. Requests must pass
   the client's enabled, schema, connection and 250 ms freshness checks.
   Assist uses linear mixing capped at 35% output and stops at goal.
+- Set `TankDriveConstants.USE_XBOX_CONTROLLER` to `true` for Xbox (default) or
+  `false` for PS4, then rebuild and deploy. `DriverControls` maps LB/L1 to intake
+  and RB/R1 to shoot. Five-NEO SPARK MAX hardware IO, disabled-only referencing,
+  Test-mode commissioning and preload autonomous are implemented. REAL settings
+  remain unconfigured; see [Fuel commissioning](docs/source/fuel-system.md).
 - Commands own the drivetrain; interruption and disable stop both sides.
   Teleop input is ignored in autonomous and test. CAN IO MotorSafety expires
   after 100 ms without feeding.
-- Autonomous defaults to a continuous stop. The inherited swerve PathPlanner
+- Autonomous defaults to a continuous stop; the optional timed backing and preload
+  shooting command requires verified fuel/auto settings and a valid intake reference. The inherited swerve PathPlanner
   paths are examples only and are not offered for this tank robot. Real CAN
   IO has no calibrated wheel-position or heading feedback, so pose/path following is not configured.
 - Simulation has differential-drive physics with estimated dimensions in

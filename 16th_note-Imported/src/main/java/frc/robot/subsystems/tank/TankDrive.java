@@ -25,6 +25,19 @@ public final class TankDrive extends SubsystemBase {
     Logger.processInputs("TankDrive", inputs);
   }
 
+  public edu.wpi.first.math.geometry.Pose2d simulatedPose() {
+    return inputs.simulatedPose;
+  }
+
+  public void resetSimulationPose(edu.wpi.first.math.geometry.Pose2d pose) {
+    if (frc.robot.constants.Constants.currentMode == frc.robot.constants.Constants.Mode.SIM
+        && DriverStation.isDisabled()) {
+      stop();
+      io.resetSimulationPose(pose);
+      inputs.simulatedPose = pose;
+    }
+  }
+
   public void tankDrive(double left, double right) {
     var speeds = DifferentialDrive.tankDriveIK(deadband(left), deadband(right), true);
     setVoltage(

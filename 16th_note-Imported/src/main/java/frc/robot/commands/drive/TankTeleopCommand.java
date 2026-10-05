@@ -1,20 +1,20 @@
 package frc.robot.commands.drive;
 
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
+import frc.robot.controls.DriverControls;
 import frc.robot.subsystems.tank.TankDrive;
 import org.mecorobotics.gamepiecevision.GamePieceVisionClient;
 
-/** Arcade driving with PS4 sticks and R2-held vision assist. */
+/** Arcade driving with Xbox or PS4 sticks and right-trigger-held vision assist. */
 public class TankTeleopCommand extends Command {
   private final TankDrive drive;
-  private final PS4Controller controller;
+  private final DriverControls controller;
   private final GamePieceVisionClient vision;
 
   public TankTeleopCommand(
-      TankDrive drive, PS4Controller controller, GamePieceVisionClient vision) {
+      TankDrive drive, DriverControls controller, GamePieceVisionClient vision) {
     this.drive = drive;
     this.controller = controller;
     this.vision = vision;
@@ -33,7 +33,7 @@ public class TankTeleopCommand extends Command {
     boolean manual =
         Math.abs(forward) > Constants.VisionPursuit.MANUAL_OVERRIDE_DEADBAND
             || Math.abs(turn) > Constants.VisionPursuit.MANUAL_OVERRIDE_DEADBAND;
-    var request = vision.getRequest(controller.getR2Button(), manual);
+    var request = vision.getRequest(controller.isVisionAssistRequested(), manual);
     if (request.active()) {
       if (request.atGoal()) {
         drive.stop();

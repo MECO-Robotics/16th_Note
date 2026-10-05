@@ -34,9 +34,16 @@ closed-loop tank autonomous:
 6. Validate in simulation and on the robot before enabling driving autos.
 
 The inherited swerve `AutoBuilder` setup and example paths are not active tank
-configuration. The chooser remains stop-only until that integration is done.
+configuration. The chooser defaults to Do nothing and also offers the timed
+Back up and shoot preloads routine described in {doc}`fuel-system`. That routine
+uses verified voltages and durations; it does not provide distance or heading
+control. Closed-loop path following still requires the feedback work above.
 
 ## Adding mechanisms
+
+The five fuel motors are owned together by `FuelSystem` through `FuelIO`.
+Configure them with `FuelConfiguration` and the disabled dashboard workflow in
+{doc}`fuel-system`; do not instantiate additional subsystems for those same CAN IDs.
 
 Follow the base structure: an IO interface, real/sim/replay implementations,
 a subsystem that handles behavior and logging, and commands for operator

@@ -3,6 +3,7 @@ package frc.robot.subsystems.drive.azimuth_motor;
 import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopGeneralConfigs;
@@ -95,7 +96,7 @@ public class AzimuthMotorIOTalonFX implements AzimuthMotorIO {
     motorCurrents = new double[config.canIds().length];
     motorAlerts = new Alert[config.canIds().length];
 
-    motors[0] = new TalonFX(config.canIds()[0], config.canBus());
+    motors[0] = new TalonFX(config.canIds()[0], new CANBus(config.canBus()));
     leaderConfig =
         new TalonFXConfiguration()
             .withMotorOutput(
@@ -218,7 +219,7 @@ public class AzimuthMotorIOTalonFX implements AzimuthMotorIO {
 
     for (int i = 1; i < config.canIds().length; i++) {
       motorval = config.reversed()[i] ? MotorAlignmentValue.Opposed : MotorAlignmentValue.Aligned;
-      motors[i] = new TalonFX(config.canIds()[i], config.canBus());
+      motors[i] = new TalonFX(config.canIds()[i], new CANBus(config.canBus()));
       motors[i].setControl(new Follower(i, motorval));
 
       motorAlerts[i] =

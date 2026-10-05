@@ -25,8 +25,8 @@ Actual wiring and inversion still need to be verified on the robot.
 | --- | --- |
 | Left Spark Max | CAN 1, not inverted |
 | Right Spark Max | CAN 2, inverted |
-| PS4 controller | USB 0; left-stick Y drives forward/reverse, right-stick X steers |
-| Vision assist | Hold the PS4 R2 button |
+| Xbox or PS4 controller | USB 0; left-stick Y drives forward/reverse, right-stick X steers |
+| Vision assist | Hold Xbox RT past halfway or PS4 R2 |
 | Tank input shaping | 0.02 deadband, signed squaring |
 | Manual assist override | Either stick magnitude greater than 0.15 |
 
@@ -34,6 +34,13 @@ Wiring and simulation values live in
 `src/main/java/frc/robot/constants/drive/TankDriveConstants.java`.
 The old CAN IDs are not used. Check wheel direction with the robot lifted
 before floor testing.
+
+Set `TankDriveConstants.USE_XBOX_CONTROLLER` to `true` for Xbox (default), or
+`false` for PS4. Rebuild and deploy after changing it; detection is not automatic.
+`DriverControls` maps LB/L1 to intake and RB/R1 to shoot. The fuel sequence
+has real SPARK MAX IO, simulation, Test-mode commissioning and preload autonomous.
+Real settings remain unconfigured and must be applied/verified before outputs run.
+See {doc}`fuel-system` for release behavior, simulation and the hardware handoff.
 
 ## Vision assist
 
@@ -55,7 +62,7 @@ returns control to the sticks. Strafe is unused by the tank drivetrain.
 
 The base disables the simulation GUI by default to support log replay.
 Enable the GUI through WPILib's simulation selection when interactive driving
-is needed, assign the PS4 controller to slot 0, and enable teleop in the simulated
+is needed, assign the selected controller to slot 0, and enable teleop in the simulated
 Driver Station. The physics model uses estimated gearing and dimensions;
 it is not calibrated to the real robot.
 
@@ -85,8 +92,9 @@ The workstation-specific Wi-Fi ownership helper is documented in
 `scripts/ROBOT-WIFI.md`. It can move the USB Wi-Fi adapter between Ubuntu and
 the Windows Driver Station VM; it does not deploy or enable the robot.
 
-Autonomous currently offers only **Do nothing**, which continuously stops
-both outputs. The inherited swerve paths are not configured for tank use.
+Autonomous defaults to **Do nothing**, which continuously stops both outputs.
+**Back up and shoot preloads** requires verified settings and a referenced intake;
+see {doc}`fuel-system` for commissioning and autonomous setup. The inherited swerve paths are not configured for tank use.
 Disabled mode and interrupted driving commands stop the drivetrain. Real CAN
 outputs also use a 100 ms WPILib MotorSafety expiration.
 
