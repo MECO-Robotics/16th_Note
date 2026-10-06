@@ -72,11 +72,13 @@ class TankDriveTest {
     var controllerSim = new edu.wpi.first.wpilibj.simulation.GenericHIDSim(0);
     controllerSim.setAxisCount(6);
     controllerSim.setButtonCount(14);
+    controllerSim.setName(useXbox ? "Xbox Controller" : "Wireless Controller");
+    DriverStationSim.setJoystickIsXbox(0, useXbox);
     int rightXAxis = useXbox ? 4 : 2;
     try (var vision = new org.mecorobotics.gamepiecevision.GamePieceVisionClient("teleop-test")) {
       var command =
           new frc.robot.commands.drive.TankTeleopCommand(
-              drive, new frc.robot.controls.DriverControls(0, useXbox), vision);
+              drive, new frc.robot.controls.DriverControls(0, true, true), vision);
       assertTrue(command.getRequirements().contains(drive));
       controllerSim.setRawAxis(1, -1);
       controllerSim.notifyNewData();
@@ -84,6 +86,11 @@ class TankDriveTest {
       assertEquals(12, io.left);
       assertEquals(12, io.right);
 
+      controllerSim.setRawAxis(1, 1);
+      controllerSim.notifyNewData();
+      command.execute();
+      assertEquals(-12, io.left);
+      assertEquals(-12, io.right);
       controllerSim.setRawAxis(1, 0);
       controllerSim.setRawAxis(rightXAxis, 1);
       controllerSim.notifyNewData();
@@ -91,6 +98,11 @@ class TankDriveTest {
       assertEquals(12, io.left);
       assertEquals(-12, io.right);
 
+      controllerSim.setRawAxis(rightXAxis, -1);
+      controllerSim.notifyNewData();
+      command.execute();
+      assertEquals(-12, io.left);
+      assertEquals(12, io.right);
       controllerSim.setRawAxis(rightXAxis, 0.01);
       controllerSim.notifyNewData();
       command.execute();

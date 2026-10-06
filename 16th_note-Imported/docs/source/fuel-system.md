@@ -155,7 +155,10 @@ output is not an active gravity hold; support the mechanism as necessary.
 
 ## Normal driver operation
 
-Select Xbox or PS4 with `TankDriveConstants.USE_XBOX_CONTROLLER`, on USB 0.
+Xbox/PS4 layout is detected automatically on USB 0. Check
+`Drive/ControllerLayout` during teleop. To force a layout, set
+`TankDriveConstants.AUTO_DETECT_CONTROLLER = false` and
+`USE_XBOX_CONTROLLER` to `true` for Xbox or `false` for PS4, then rebuild/deploy.
 Release both bumpers after enable/reconnection/interruption before operating.
 
 | Input | Behavior |

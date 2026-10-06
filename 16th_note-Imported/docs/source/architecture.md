@@ -10,8 +10,9 @@ and cancels commands for test. Mode transitions explicitly stop the tank and fue
 `RobotContainer` assembles `TankDrive` through `TankDriveIO.fromSparkMax(MotorType.kBrushless)`.
 The factory encapsulates real, simulation, and replay IO selection using
 `frc.robot.constants.Constants.currentMode`. It wires the default `TankTeleopCommand`.
-The command reads the selected Xbox/PS4 layout through `DriverControls` and the game-piece vision client, drives only during
-teleop, and stops when interrupted. The autonomous chooser registers a
+The command reads the automatically detected (or manually overridden) Xbox/PS4
+layout through `DriverControls` and the game-piece vision client. It drives only
+during enabled teleop with a connected controller and stops when interrupted. The autonomous chooser registers a
 continuous stop command requiring the same subsystem.
 
 ## Fuel coordination

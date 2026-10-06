@@ -35,8 +35,13 @@ Wiring and simulation values live in
 The old CAN IDs are not used. Check wheel direction with the robot lifted
 before floor testing.
 
-Set `TankDriveConstants.USE_XBOX_CONTROLLER` to `true` for Xbox (default), or
-`false` for PS4. Rebuild and deploy after changing it; detection is not automatic.
+Connect the controller as USB 0 in Driver Station. Xbox/PS4 layout is detected
+automatically: left-stick Y drives forward/reverse and right-stick X turns.
+Check `Drive/ControllerLayout` and `Drive/ControllerConnected` on the dashboard;
+`Drive/ForwardInput` and `Drive/TurnInput` show the requested inputs during teleop.
+If a controller needs a manual override, set
+`TankDriveConstants.AUTO_DETECT_CONTROLLER = false`, then set
+`USE_XBOX_CONTROLLER` to `true` for Xbox or `false` for PS4 and rebuild/deploy.
 `DriverControls` maps LB/L1 to intake and RB/R1 to shoot. The fuel sequence
 has real SPARK MAX IO, simulation, Test-mode commissioning and preload autonomous.
 Real settings remain unconfigured and must be applied/verified before outputs run.

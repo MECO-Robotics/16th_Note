@@ -21,8 +21,10 @@ to preserve the existing VS Code workspace location.
   assist. Moving either drive axis beyond 0.15 overrides assist. Requests must pass
   the client's enabled, schema, connection and 250 ms freshness checks.
   Assist uses linear mixing capped at 35% output and stops at goal.
-- Set `TankDriveConstants.USE_XBOX_CONTROLLER` to `true` for Xbox (default) or
-  `false` for PS4, then rebuild and deploy. `DriverControls` maps LB/L1 to intake
+- Xbox/PS4 layout is detected automatically on USB 0. Both use left-stick Y
+  for forward/reverse and right-stick X for turning. For a manual override, set
+  `TankDriveConstants.AUTO_DETECT_CONTROLLER = false` and select the layout with
+  `USE_XBOX_CONTROLLER`, then rebuild and deploy. `DriverControls` maps LB/L1 to intake
   and RB/R1 to shoot. Five-NEO SPARK MAX hardware IO, disabled-only referencing,
   Test-mode commissioning and preload autonomous are implemented. REAL settings
   remain unconfigured; see [Fuel commissioning](docs/source/fuel-system.md).

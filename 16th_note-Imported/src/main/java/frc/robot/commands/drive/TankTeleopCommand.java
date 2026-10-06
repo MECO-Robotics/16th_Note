@@ -24,12 +24,18 @@ public class TankTeleopCommand extends Command {
 
   @Override
   public void execute() {
-    if (!DriverStation.isTeleopEnabled()) {
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
+        "Drive/ControllerLayout", controller.layoutName());
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putBoolean(
+        "Drive/ControllerConnected", controller.isConnected());
+    if (!DriverStation.isTeleopEnabled() || !controller.isConnected()) {
       drive.stop();
       return;
     }
     double forward = -controller.getLeftY();
     double turn = -controller.getRightX();
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Drive/ForwardInput", forward);
+    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putNumber("Drive/TurnInput", turn);
     boolean manual =
         Math.abs(forward) > Constants.VisionPursuit.MANUAL_OVERRIDE_DEADBAND
             || Math.abs(turn) > Constants.VisionPursuit.MANUAL_OVERRIDE_DEADBAND;

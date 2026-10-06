@@ -1,7 +1,10 @@
 # Live NetworkTables simulation check
 
-For a harness sending PS4 axes, set `TankDriveConstants.USE_XBOX_CONTROLLER = false`
-before launching the simulator; the default Xbox layout uses different axis indices.
+Controller layout is detected from Driver Station joystick metadata. A harness
+sending PS4 axes should identify the device as a non-Xbox `Wireless Controller`.
+For unnamed simulation devices, `TankDriveConstants.USE_XBOX_CONTROLLER` selects
+the fallback (Xbox by default); set it to `false` for unnamed PS4 harnesses.
+Set `AUTO_DETECT_CONTROLLER = false` to force that selection for any device.
 
 This check runs the actual robot program and uses a separate NT4 client to
 observe drivetrain outputs and simulated feedback. A HAL WebSocket connection
