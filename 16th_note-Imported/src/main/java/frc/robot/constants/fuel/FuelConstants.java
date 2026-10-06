@@ -172,6 +172,30 @@ public final class FuelConstants {
           primarySpeedToleranceMotorRpm);
     }
 
+    public Settings withShooterMotorRpm(double primary, double secondary) {
+      return new Settings(
+          minDegrees,
+          maxDegrees,
+          intakeDegrees,
+          feedDegrees,
+          agitationDegrees,
+          positionToleranceDegrees,
+          primary,
+          primarySpeedToleranceMotorRpm,
+          readySeconds,
+          spinupTimeoutSeconds,
+          motionTimeoutSeconds,
+          feedDwellSeconds,
+          agitationDwellSeconds,
+          maxAgitationCycles,
+          agitationEnabled,
+          maxFeedbackAgeSeconds,
+          intakeDutyCycle,
+          indexerDutyCycle,
+          secondary,
+          secondarySpeedToleranceMotorRpm);
+    }
+
     public Settings withAgitation(boolean enabled) {
       return new Settings(
           minDegrees,

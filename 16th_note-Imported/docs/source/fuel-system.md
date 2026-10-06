@@ -312,7 +312,7 @@ upper reference, reset six preloads, then select **Back up and shoot preloads**
 and enable Autonomous. This is a SIM-only example, not a verified real preload
 position. Dashboard settings are temporary.
 
-`Fuel/Sim/LaunchSpeedMps` (default 7.5 at 3000 motor RPM) is a practice estimate.
+`Fuel/Sim/LaunchSpeedMps` (default approximately 6.39 at 3000 motor RPM) is a practice estimate.
 The hood angle is fixed at **80 degrees above horizontal**, matching the supplied
 mechanical constraint; it is not dashboard-tunable. Shooter motor
 RPM scales the example exit speed; no wheel ratio, compression or efficiency is
@@ -370,7 +370,7 @@ fuel along a teleport. A practice reset is rejected while enabled.
 The intake collects on robot **+X** and the shooter exits on robot **-X**.
 Shots originate behind the robot center and follow the opposite direction to
 its heading. The six-preload reset faces the rear shooter toward the blue hub from a static
-starting distance calculated for the example 7.5 m/s, 80-degree trajectory;
+starting distance calculated for the example 6.39 m/s, 80-degree trajectory;
 the pickup reset still faces the intake toward the neutral-zone fuel.
 
 `Fuel/Sim/LaunchSpeedMps` controls estimated ball exit speed at 3000 motor RPM;
@@ -414,3 +414,72 @@ validation. Verify mounting alignment before treating the model as a
 physical-motion reference. `FuelVisualization` holds only visualization
 offsets; no real controller configuration, pickup physics, or shooter ballistics
 are derived from these meshes. See the asset README for geometry assumptions.
+
+
+## Nine-foot shot-height target
+
+The current target is **9 feet from carpet to the top of the fuel ball**, not
+its center. `Fuel/Sim/PeakLimitFeet` defaults to 9 and can be increased later
+when venue clearance and shooting measurements justify it. This is a temporary
+SIM-only setting, restored on restart. `Fuel/Sim/PredictedPeakFeet` reports the
+ballistic prediction and `Fuel/Sim/ShotBlockedBy` reports rejected shots.
+
+The default SIM launch speed is approximately **6.39 m/s at 3000 motor RPM**,
+calculated for the fixed 80-degree launch angle, estimated 0.65 m release height,
+0.075 m ball radius and gravity alone. The corresponding descending shot reaches
+the hub center from about **1.17 m / 3.84 ft**, measured horizontally from the
+release point, not from the bumper. The six-preload reset uses this starting
+range. Changing the height limit does not automatically change speed or position.
+
+A predicted over-height shot or invalid limit prevents a new simulated launch
+and does not consume simulated inventory. Actual velocity is not silently
+clamped, and projectiles already in flight continue on their original trajectories.
+The check includes the motor-RPM scaling, so increasing either launch speed or
+motor RPM cannot bypass the simulated height limit.
+
+**This does not enforce a nine-foot ceiling on the real robot.** The real
+2828.57 motor-RPM starting targets are not calibrated to ball exit speed. Measure
+release height, launch angle, peak height and successful shot distance on hardware,
+then build a verified distance-to-RPM table with margin below the height target.
+Air resistance, spin and shot variation are not modeled here. Automatic
+selection of flywheel speed from distance remains pending that calibration and
+reliable distance measurement; the current robot still uses fixed RPM targets.
+
+
+## Optional trench practice shots (SIM only)
+
+Close shooting remains the default with a 9-foot height limit. Optional fixed
+left/right trench practice locations are on the **blue alliance side**, clear
+of the trench structure; left/right are as viewed from the blue driver stations.
+They are practice estimates, not measured shooting marks or autonomous paths.
+At the fixed 80-degree hood angle, both are approximately 10.6 ft from release
+to hub center and predict an 18.4 ft ball-top peak. Their provisional SIM target
+is approximately 4666 motor RPM. These RPM values are NOT calibrated real targets.
+
+1. Disable simulation.
+2. Set `Fuel/Sim/TrenchShotsEnabled` to true (it starts false).
+3. Run **Fuel/Sim/Prepare left trench shot (disabled)** or
+   **Fuel/Sim/Prepare right trench shot (disabled)**.
+4. The command sets both SIM motor targets, restores the standard exit-speed
+   conversion, sets the peak limit to 19 ft, places the robot facing the hub,
+   loads six fuel, and references the simulated intake. It preserves the other
+   active mechanism settings. Enable Teleop, release bumpers, then hold RB/R1.
+5. To return to close shooting, disable and run **Fuel/Sim/Reset six preloads
+   (disabled)**. It restores 3000 SIM motor RPM and the 9-foot limit, repositions
+   the robot and turns off trench shots.
+
+Turning `TrenchShotsEnabled` off while a trench preset is active immediately
+blocks new simulated launches, but does not remove balls already airborne or
+change the active shooter motor request. Release RB/R1 to stop those requests.
+The pickup/empty reset commands keep the current shot settings; use the close
+six-preload reset to restore close settings explicitly. `Fuel/Sim/ShotPreset`
+shows the last selected shot preset. All profile changes are rejected while
+enabled, and the preset-target API rejects any non-simulation IO backend.
+
+The reported venue ceiling estimate is 20–30 ft, not a verified lowest-obstruction
+measurement. A 19-foot planned cap leaves only about 1 ft beneath an assumed
+20-foot obstruction. Before enabling a corresponding real trench shot, verify
+lights/beams and field placement, then measure the actual trajectory and RPM
+with suitable margin. There is no real trench preset or automatic range-to-RPM
+selection enabled by these practice controls. Robot hardware calibration and
+real autonomous remain governed by their existing checks.

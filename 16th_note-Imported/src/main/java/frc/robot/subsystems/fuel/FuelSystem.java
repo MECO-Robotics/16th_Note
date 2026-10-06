@@ -139,6 +139,31 @@ public final class FuelSystem extends SubsystemBase {
     lastRequest = clock.getAsDouble();
   }
 
+  /** Practice presets cannot write real hardware settings or change an enabled robot. */
+  public boolean setSimulationShooterTarget(double motorRpm) {
+    if (!(io instanceof FuelIOSim)
+        || !DriverStation.isDisabled()
+        || configuration == null
+        || configuration.sequence() == null
+        || !Double.isFinite(motorRpm)
+        || motorRpm <= 0
+        || motorRpm > 6000) return false;
+    var c = configuration;
+    var settings = c.sequence().withShooterMotorRpm(motorRpm, motorRpm);
+    if (!applyConfiguration(
+        new FuelConfiguration(
+            c.devices(),
+            c.coupling(),
+            c.followerCompatible(),
+            c.followerInverted(),
+            c.pivot(),
+            settings,
+            c.auto()))) return false;
+    SmartDashboard.putNumber("Fuel/Config/PrimaryMotorRpm", motorRpm);
+    SmartDashboard.putNumber("Fuel/Config/SecondaryMotorRpm", motorRpm);
+    return true;
+  }
+
   public boolean applyConfiguration(FuelConfiguration config) {
     if (!DriverStation.isDisabled()) {
       actionStatus = "Configuration rejected: disable first";

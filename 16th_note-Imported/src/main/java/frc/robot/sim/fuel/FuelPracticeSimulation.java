@@ -11,6 +11,7 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 
 /** Constructed only in SIM; visual estimates cannot configure or enable real hardware. */
 public final class FuelPracticeSimulation {
+  private boolean trenchShotActive;
   private final FuelWorldSim world = new FuelWorldSim();
   private final TankDrive drive;
   private final FuelSystem fuel;
@@ -21,7 +22,19 @@ public final class FuelPracticeSimulation {
   public FuelPracticeSimulation(TankDrive drive, FuelSystem fuel) {
     this.drive = drive;
     this.fuel = fuel;
+    SmartDashboard.putBoolean("Fuel/Sim/TrenchShotsEnabled", false);
+    SmartDashboard.putString("Fuel/Sim/ShotPreset", "Close");
+    SmartDashboard.putData(
+        "Fuel/Sim/Prepare left trench shot (disabled)",
+        Commands.runOnce(() -> prepareShot(FuelShotPractice.LEFT), drive, fuel)
+            .ignoringDisable(true));
+    SmartDashboard.putData(
+        "Fuel/Sim/Prepare right trench shot (disabled)",
+        Commands.runOnce(() -> prepareShot(FuelShotPractice.RIGHT), drive, fuel)
+            .ignoringDisable(true));
     SmartDashboard.putNumber("Fuel/Sim/LaunchSpeedMps", FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
+    SmartDashboard.putNumber(
+        "Fuel/Sim/PeakLimitFeet", FuelWorldSim.DEFAULT_PEAK_LIMIT_METERS / .3048);
     SmartDashboard.putString("Fuel/Sim/Hood", "Fixed at 80 degrees above horizontal");
     SmartDashboard.putString(
         "Fuel/Sim/Model",
@@ -32,13 +45,36 @@ public final class FuelPracticeSimulation {
             .ignoringDisable(true));
     SmartDashboard.putData(
         "Fuel/Sim/Reset six preloads (disabled)",
-        Commands.runOnce(() -> reset(6, FuelWorldSim.SHOOTING_START, true), drive, fuel)
+        Commands.runOnce(() -> prepareShot(FuelShotPractice.CLOSE), drive, fuel)
             .ignoringDisable(true));
     SmartDashboard.putData(
         "Fuel/Sim/Prepare pickup practice (disabled)",
         Commands.runOnce(() -> reset(0, FuelWorldSim.PICKUP_START, true), drive, fuel)
             .ignoringDisable(true));
     reset(0, FuelWorldSim.START, false);
+  }
+
+  private void prepareShot(FuelShotPractice.Preset preset) {
+    if (!DriverStation.isDisabled()) {
+      SmartDashboard.putString("Fuel/Sim/ResetStatus", "Rejected: disable simulation first");
+      return;
+    }
+    boolean trench = preset != FuelShotPractice.CLOSE;
+    if (trench && !SmartDashboard.getBoolean("Fuel/Sim/TrenchShotsEnabled", false)) {
+      SmartDashboard.putString(
+          "Fuel/Sim/ResetStatus", "Rejected: enable TrenchShotsEnabled first (SIM only)");
+      return;
+    }
+    if (!fuel.setSimulationShooterTarget(preset.motorRpm())) {
+      SmartDashboard.putString("Fuel/Sim/ResetStatus", "Rejected: could not apply SIM shot preset");
+      return;
+    }
+    trenchShotActive = trench;
+    if (!trench) SmartDashboard.putBoolean("Fuel/Sim/TrenchShotsEnabled", false);
+    SmartDashboard.putNumber("Fuel/Sim/LaunchSpeedMps", FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
+    SmartDashboard.putNumber("Fuel/Sim/PeakLimitFeet", preset.peakLimitFeet());
+    SmartDashboard.putString("Fuel/Sim/ShotPreset", preset.name() + " (SIM only; uncalibrated)");
+    reset(6, preset.pose(), true);
   }
 
   private void reset(int preloads, edu.wpi.first.math.geometry.Pose2d pose, boolean reference) {
@@ -60,14 +96,28 @@ public final class FuelPracticeSimulation {
 
   public void periodic() {
     var pose = drive.simulatedPose();
+    boolean trenchAllowed =
+        !trenchShotActive || SmartDashboard.getBoolean("Fuel/Sim/TrenchShotsEnabled", false);
     world.update(
         .02,
         pose,
         DriverStation.isTeleopEnabled() || DriverStation.isAutonomousEnabled(),
         fuel.collecting(),
-        fuel.feeding(),
+        fuel.feeding() && trenchAllowed,
         fuel.simulatedShooterRpm(),
-        SmartDashboard.getNumber("Fuel/Sim/LaunchSpeedMps", FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS));
+        SmartDashboard.getNumber("Fuel/Sim/LaunchSpeedMps", FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS),
+        SmartDashboard.getNumber("Fuel/Sim/PeakLimitFeet", Double.NaN) * .3048);
+    SmartDashboard.putString(
+        "Fuel/Sim/ShotBlockedBy",
+        trenchAllowed
+            ? world.shotBlockedReason()
+            : "Trench shots disabled; select close reset to restore close settings");
+    SmartDashboard.putNumber(
+        "Fuel/Sim/PredictedPeakFeet",
+        FuelWorldSim.predictedPeakMeters(
+                fuel.simulatedShooterRpm(),
+                SmartDashboard.getNumber("Fuel/Sim/LaunchSpeedMps", Double.NaN))
+            / .3048);
     Logger.recordOutput("Visualization/16thNote/RobotPose", pose);
     var mouth = FuelWorldSim.pickupMouth(pose);
     Logger.recordOutput(

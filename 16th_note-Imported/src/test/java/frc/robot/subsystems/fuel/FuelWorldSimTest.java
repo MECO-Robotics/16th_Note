@@ -34,7 +34,7 @@ class FuelWorldSimTest {
             fuel.collecting(),
             fuel.feeding(),
             fuel.simulatedShooterRpm(),
-            7.5);
+            FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
         if (i == 100) assertEquals(6, sim.held());
       }
       assertEquals(6, sim.launched());
@@ -49,7 +49,7 @@ class FuelWorldSimTest {
   }
 
   private void tick(FuelWorldSim sim, Pose2d pose, boolean enabled, boolean intake, boolean feed) {
-    sim.update(.02, pose, enabled, intake, feed, 3000, 7.5);
+    sim.update(.02, pose, enabled, intake, feed, 3000, FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
   }
 
   @Test
@@ -183,7 +183,7 @@ class FuelWorldSimTest {
     double originX = 1.85;
     double slowDistance = originX - slow.projectilePoses()[0].getX();
     double fastDistance = originX - fast.projectilePoses()[0].getX();
-    assertEquals(7.5 / 5.8, fastDistance / slowDistance, 1e-9);
+    assertEquals(FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS / 5.8, fastDistance / slowDistance, 1e-9);
     assertTrue(fastDistance > slowDistance);
   }
 
@@ -193,7 +193,7 @@ class FuelWorldSimTest {
       var sim = new FuelWorldSim();
       sim.reset(1);
       var robot = new Pose2d(2, 2, new Rotation2d());
-      sim.update(.02, robot, true, false, true, 3000, speed);
+      sim.update(.02, robot, true, false, true, 3000, speed, 10);
       var shot = sim.projectilePoses()[0];
       double horizontal = 1.85 - shot.getX();
       double vertical = shot.getZ() - .65 + .5 * 9.81 * .02 * .02;
@@ -210,5 +210,42 @@ class FuelWorldSimTest {
     sim.update(.02, FuelWorldSim.SHOOTING_START, true, false, true, 3000, 16);
     assertEquals(6, sim.held());
     assertEquals(0, sim.launched());
+  }
+
+  @Test
+  void nineFootLimitIncludesBallRadiusAndBlocksHigherSpeedWithoutFakingTrajectory() {
+    var sim = new FuelWorldSim();
+    sim.reset(6);
+    var awayFromHub = new Pose2d(8, 2, new Rotation2d());
+    sim.update(.02, awayFromHub, true, false, true, 3000, 7.5);
+    assertEquals(6, sim.held());
+    assertTrue(sim.shotBlockedReason().contains("exceeds"));
+    sim.update(.02, awayFromHub, true, false, true, 6000, FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
+    assertEquals(6, sim.held());
+    sim.update(.02, awayFromHub, true, false, true, 3000, FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
+    assertEquals(5, sim.held());
+    assertEquals("", sim.shotBlockedReason());
+    double observedPeak = 0;
+    for (int i = 0; i < 100; i++) {
+      sim.update(.02, awayFromHub, true, false, false, 3000, FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
+      for (var shot : sim.projectilePoses()) {
+        observedPeak = Math.max(observedPeak, shot.getZ() + FuelWorldSim.RADIUS);
+      }
+    }
+    assertEquals(9 * .3048, observedPeak, .002);
+    assertTrue(observedPeak <= 9 * .3048 + 1e-9);
+  }
+
+  @Test
+  void peakLimitIsAdjustableAndInvalidLimitsBlockNewShots() {
+    var sim = new FuelWorldSim();
+    sim.reset(6);
+    for (double limit : new double[] {Double.NaN, Double.POSITIVE_INFINITY, 0, .7}) {
+      sim.update(.02, FuelWorldSim.SHOOTING_START, true, false, true, 3000, 7.5, limit);
+      assertEquals(6, sim.held());
+    }
+    sim.update(.02, FuelWorldSim.SHOOTING_START, true, false, true, 3000, 7.5, 12 * .3048);
+    assertEquals(5, sim.held());
+    assertEquals("", sim.shotBlockedReason());
   }
 }

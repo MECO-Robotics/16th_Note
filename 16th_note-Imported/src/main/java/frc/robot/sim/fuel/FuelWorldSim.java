@@ -11,9 +11,26 @@ public final class FuelWorldSim {
   public static final double HUB_X = 4.625467, HUB_Y = 4.034663, RED_HUB_X = 11.915521;
   public static final double HUB_HEIGHT = 1.8288, APERTURE_RADIUS = .45;
   public static final Pose2d START = new Pose2d(HUB_X - 1.35, HUB_Y, new Rotation2d());
-  public static final double DEFAULT_LAUNCH_SPEED_MPS = 7.5;
   public static final double HOOD_ANGLE_DEGREES = 80;
   private static final double MUZZLE_HEIGHT = .65;
+  /** Maximum height of the TOP of a simulated fuel ball above carpet. */
+  public static final double DEFAULT_PEAK_LIMIT_METERS = 9 * .3048;
+
+  public static final double DEFAULT_LAUNCH_SPEED_MPS =
+      Math.sqrt(2 * 9.81 * (DEFAULT_PEAK_LIMIT_METERS - RADIUS - MUZZLE_HEIGHT))
+          / Math.sin(Math.toRadians(HOOD_ANGLE_DEGREES));
+
+  public static double predictedPeakMeters(double motorRpm, double launchSpeed) {
+    double speed = launchSpeed * Math.min(motorRpm / 3000.0, 2);
+    double vertical = speed * Math.sin(Math.toRadians(HOOD_ANGLE_DEGREES));
+    return MUZZLE_HEIGHT + RADIUS + vertical * vertical / (2 * 9.81);
+  }
+
+  private String shotBlockedReason = "";
+
+  public String shotBlockedReason() {
+    return shotBlockedReason;
+  }
   // A static practice placement for the example ballistic parameters, not automatic aiming.
   private static double defaultShotRange() {
     double pitch = Math.toRadians(HOOD_ANGLE_DEGREES);
@@ -84,7 +101,31 @@ public final class FuelWorldSim {
       boolean feed,
       double motorRpm,
       double launchSpeed) {
+    update(dt, robot, enabled, intake, feed, motorRpm, launchSpeed, DEFAULT_PEAK_LIMIT_METERS);
+  }
+
+  public void update(
+      double dt,
+      Pose2d robot,
+      boolean enabled,
+      boolean intake,
+      boolean feed,
+      double motorRpm,
+      double launchSpeed,
+      double peakLimitMeters) {
     if (!Double.isFinite(dt) || dt <= 0 || dt > .1) return;
+    shotBlockedReason =
+        !Double.isFinite(peakLimitMeters) || peakLimitMeters <= MUZZLE_HEIGHT + RADIUS
+            ? "Invalid simulated peak-height limit"
+            : !Double.isFinite(motorRpm)
+                    || motorRpm <= 0
+                    || !Double.isFinite(launchSpeed)
+                    || launchSpeed <= 0
+                    || launchSpeed > 15
+                ? "Invalid or stopped simulated launch speed"
+                : predictedPeakMeters(motorRpm, launchSpeed) > peakLimitMeters + 1e-9
+                    ? "Simulated shot exceeds peak-height limit"
+                    : "";
     cooldown = Math.max(0, cooldown - dt);
     if (enabled && intake) {
       var mouth = pickupMouth(robot);
@@ -101,6 +142,7 @@ public final class FuelWorldSim {
     } else previousMouth = null;
     if (enabled
         && feed
+        && shotBlockedReason.isEmpty()
         && held > 0
         && cooldown == 0
         && Double.isFinite(motorRpm)
