@@ -39,6 +39,36 @@ to preserve the existing VS Code workspace location.
   `TankDriveConstants`; these are not calibrated robot measurements. Replay
   restores logged IO inputs and never allocates motor hardware.
 
+## Controller troubleshooting
+
+Assign the controller to USB 0 in Driver Station and check these dashboard values
+while the drivetrain command is running in teleop:
+
+| Key | Expected behavior |
+| --- | --- |
+| `Drive/ControllerConnected` | `true` with the controller connected |
+| `Drive/ControllerLayout` | `Xbox (auto)` or `PS4 (auto)` matching the supplied layout |
+| `Drive/ForwardInput` | Changes with left-stick up/down; forward is positive |
+| `Drive/TurnInput` | Changes with right-stick left/right; left is positive |
+
+The inputs are published before drivetrain deadband and squaring. They are only
+updated during enabled teleop with a connected controller, so displayed input
+values can remain from an earlier cycle while disabled or disconnected.
+
+Automatic selection uses Driver Station's Xbox flag or an Xbox/XInput device
+name; other named devices use the PS4 layout. Unnamed simulation devices use
+`USE_XBOX_CONTROLLER` as a fallback. Only Xbox and PS4 layouts are supported.
+If an adapter reports the wrong layout, set `AUTO_DETECT_CONTROLLER = false`
+and `USE_XBOX_CONTROLLER = true` for Xbox or `false` for PS4 in
+[`TankDriveConstants`](src/main/java/frc/robot/constants/drive/TankDriveConstants.java),
+then rebuild and deploy. A PS4 controller presented by an adapter as XInput
+should use the Xbox layout.
+
+The Xbox right-stick X axis is 4 and the native PS4 right-stick X axis is 2;
+both use axis 1 for left-stick Y. Forcing Xbox mode with native PS4 input can
+therefore allow forward/reverse while steering fails. The automatic selection
+fix must be deployed to the robot before it changes real driving behavior.
+
 ## Build and verify
 
 From this directory, using the WPILib 2026 JDK:
