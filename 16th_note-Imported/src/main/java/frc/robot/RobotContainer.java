@@ -28,7 +28,7 @@ public class RobotContainer {
       new DriverControls(
           TankDriveConstants.DRIVER_CONTROLLER_PORT,
           TankDriveConstants.AUTO_DETECT_CONTROLLER,
-          TankDriveConstants.USE_XBOX_CONTROLLER);
+          TankDriveConstants.CONTROLLER_LAYOUT);
   private final GamePieceVisionClient vision =
       new GamePieceVisionClient(Constants.VisionPursuit.CAMERA_NAME);
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -38,6 +38,10 @@ public class RobotContainer {
       frc.robot.constants.Constants.currentMode == frc.robot.constants.Constants.Mode.SIM
           ? new frc.robot.sim.fuel.FuelPracticeSimulation(drive, fuel)
           : null;
+
+  public void publishControllerDiagnostics() {
+    driverController.publishDiagnostics();
+  }
 
   public void simulationPeriodic() {
     if (practice != null) practice.periodic();

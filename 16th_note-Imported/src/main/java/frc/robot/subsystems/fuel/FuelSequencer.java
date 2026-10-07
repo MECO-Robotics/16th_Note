@@ -41,7 +41,7 @@ public final class FuelSequencer {
     }
   }
 
-  private final Settings settings;
+  private Settings settings;
   private State state = State.DISABLED;
   private String fault = "";
   private boolean armed;
@@ -56,6 +56,18 @@ public final class FuelSequencer {
 
   public FuelSequencer(Settings settings) {
     this.settings = settings;
+  }
+
+  /** Retarget an active sequence without losing arming, faults, or completed cycles. */
+  void tuneIntakeAngles(double feed, double agitation, double now) {
+    settings = settings.withIntakeAngles(feed, agitation);
+    double target =
+        switch (state) {
+          case FEEDING, AGITATING_UP -> feed;
+          case AGITATING_DOWN -> agitation;
+          default -> pivotGoal;
+        };
+    if (pivotEnabled && target != pivotGoal) goal(target, now);
   }
 
   /** Only the autonomous owner may bypass human button-release arming. */

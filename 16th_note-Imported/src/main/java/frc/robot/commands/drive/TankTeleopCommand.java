@@ -7,7 +7,7 @@ import frc.robot.controls.DriverControls;
 import frc.robot.subsystems.tank.TankDrive;
 import org.mecorobotics.gamepiecevision.GamePieceVisionClient;
 
-/** Arcade driving with Xbox or PS4 sticks and right-trigger-held vision assist. */
+/** Arcade driving with the selected gamepad layout and right-trigger-held vision assist. */
 public class TankTeleopCommand extends Command {
   private final TankDrive drive;
   private final DriverControls controller;
@@ -24,10 +24,6 @@ public class TankTeleopCommand extends Command {
 
   @Override
   public void execute() {
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putString(
-        "Drive/ControllerLayout", controller.layoutName());
-    edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.putBoolean(
-        "Drive/ControllerConnected", controller.isConnected());
     if (!DriverStation.isTeleopEnabled() || !controller.isConnected()) {
       drive.stop();
       return;

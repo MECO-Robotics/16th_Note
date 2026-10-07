@@ -9,8 +9,9 @@ public final class TankDriveConstants {
   public static final int DRIVER_CONTROLLER_PORT = 0;
   public static final boolean AUTO_DETECT_CONTROLLER = true;
   // Used for unnamed simulation devices or when AUTO_DETECT_CONTROLLER is false.
-  // For a manual override, true selects Xbox and false selects PS4.
-  public static final boolean USE_XBOX_CONTROLLER = true;
+  // Options: XBOX, PS4, LOGITECH_DUAL_ACTION.
+  public static final frc.robot.controls.DriverControls.Layout CONTROLLER_LAYOUT =
+      frc.robot.controls.DriverControls.Layout.XBOX;
   public static final double DEADBAND = 0.02;
   public static final double MAX_VOLTS = 12.0;
   // Simulation estimates only. Measure the robot before using model-based autonomous.

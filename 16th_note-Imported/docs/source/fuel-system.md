@@ -63,10 +63,12 @@ still require configuration before shooting. Simulation retains its separate
 **Fuel/Apply configuration (disabled)** is invoked. The operation rejects enabled
 robots, stops all fuel outputs, applies an immutable snapshot, checks controller
 results, and invalidates the intake reference. Settings are not written to
-controller flash on every iteration. Dashboard settings are temporary; copy
+controller flash on every iteration. Except for the accepted feed/agitation angles,
+dashboard settings are temporary; copy
 verified values into `FuelConstants.REAL` using the `FuelConfiguration` records
 before relying on them at an event. `Fuel/ActiveConfiguration` displays/logs the
-last applied snapshot for review. Restarting restores the checked-in defaults.
+last applied snapshot for review. Restarting restores the checked-in configuration
+and reloads the last accepted feed/agitation angles separately.
 
 | Readiness display | Meaning |
 | --- | --- |
@@ -155,10 +157,12 @@ output is not an active gravity hold; support the mechanism as necessary.
 
 ## Normal driver operation
 
-Xbox/PS4 layout is detected automatically on USB 0. Check
-`Drive/ControllerLayout` during teleop. To force a layout, set
+Xbox/PS4/Logitech Dual Action layout is detected automatically on USB 0. Check
+`Drive/ControllerLayout` in any mode, including disabled. To force a layout, set
 `TankDriveConstants.AUTO_DETECT_CONTROLLER = false` and
-`USE_XBOX_CONTROLLER` to `true` for Xbox or `false` for PS4, then rebuild/deploy.
+`CONTROLLER_LAYOUT` to `Layout.XBOX`, `Layout.PS4`, or
+`Layout.LOGITECH_DUAL_ACTION`, then rebuild/deploy.
+Logitech button 5 is intake and button 6 is shoot; button 8 requests vision assist.
 Release both bumpers after enable/reconnection/interruption before operating.
 
 | Input | Behavior |
@@ -186,6 +190,115 @@ Automatic bounded agitation is implemented but defaults off. After basic feeding
 works, enter measured collision-free intermediate positions, dwells and cycle
 count, then enable it through the disabled configuration workflow. There is no
 beam break, fuel counter or automatic empty detection.
+
+### Tune how far the intake rises
+
+#### AdvantageScope tuning (recommended for angle adjustments)
+
+1. Run the updated robot program or simulator and connect AdvantageScope using
+   **NetworkTables 4 (AdvantageKit)**. Disable real hardware before editing;
+   simulation accepts angle edits while enabled.
+2. Click the **slider icon beside the sidebar search box** to enable Tuning Mode;
+   the icon turns purple.
+3. Expand **Tuning → Fuel**. Edit **FeedDegrees** for the highest position the
+   intake reaches. Edit **AgitationDegrees** for the intermediate lower position.
+   Press Enter or leave the input box to submit each value.
+4. Read **AdvantageKit → RealOutputs → Fuel → AngleTuningStatus**. Valid values
+   apply automatically while disabled; no dashboard command is needed. The
+   corresponding **ActiveFeedDegrees** and **ActiveAgitationDegrees** show the
+   accepted targets. On hardware, enabled edits remain pending until disabled. Invalid angles
+   leave the last valid settings active and display a rejection reason.
+5. Enable teleop and release both bumpers to arm, then hold shoot to test.
+   In simulation, edits retarget the active feeding or agitation motion without
+   releasing shoot. On hardware, disable before the next adjustment.
+   Increase FeedDegrees to stop the intake lower.
+
+These angle-only edits preserve the existing intake reference and do not
+reconfigure motor controllers. They do not establish a missing reference or
+bypass missing hardware configuration. They affect both teleop and autonomous
+feeding targets; autonomous start position and all other settings stay unchanged.
+Optional repeated agitation still requires `AgitationEnabled` in the full
+configuration. When agitation is off, `AngleTuningStatus` explains that only
+`FeedDegrees` affects the shooting position; editing `AgitationDegrees` alone
+does not start agitation. Neither field commands motion while idle or disabled.
+Adjust the lower endpoint first if raising the feed angle would
+otherwise violate the required angle ordering.
+
+Use `/Tuning/Fuel/FeedDegrees` and `/Tuning/Fuel/AgitationDegrees`, not the logged
+`NetworkInputs` copies or `RealOutputs`, which are read-only. The new values also
+update the staged SmartDashboard angle fields. A later full configuration apply
+resynchronizes these tuning inputs and saves valid angles too. The last accepted
+pair saves automatically through WPILib's persistent NetworkTables storage and
+reloads on startup; angle adjustments need no code edit or redeploy after this
+feature is installed. Rejected edits and hardware edits pending disable do not
+overwrite the saved pair. For the UI details see
+[AdvantageScope Tuning Mode](https://docs.advantagescope.org/overview/live-sources/tuning-mode/).
+
+The saved pair is stored under `/Preferences/16thNote/Fuel/SIM/IntakeAngles` or
+`/Preferences/16thNote/Fuel/REAL/IntakeAngles`. SIM and REAL values are independent;
+replay does not save angles. The server writes persistent values asynchronously,
+so allow a few seconds after an accepted edit before shutting down. In desktop
+simulation, keep the project's ignored `networktables.json` file across restarts.
+The roboRIO keeps its own persistent file outside the deployed code. See
+[WPILib persistent topics](https://docs.wpilib.org/en/latest/docs/software/networktables/networktables-intro.html).
+
+Saved angles are revalidated against the current configuration. If hardware is
+unconfigured, they populate the staged angle fields but cannot enable motion or
+replace the required hardware configuration. Startup defaults are used when no
+saved pair exists; invalid saved targets are rejected. Intake referencing and the
+agitation enable setting are not persisted by this feature.
+
+If an accepted angle does not move the simulated intake:
+
+- Keep the robot simulator running; AdvantageScope alone does not run the robot code.
+- While disabled, use **Fuel/Confirm intake at upper stop** to establish the
+  simulated reference. Enable Teleop, release both bumpers, then hold shoot.
+- For repeated agitation, set **Fuel/Config/AgitationEnabled** to true and run
+  **Fuel/Apply configuration (disabled)**, then confirm the reference again.
+  The agitation endpoint must be between the feed and deployed positions, with
+  clearance for the position tolerance. Equal feed/agitation angles are invalid
+  when agitation is enabled.
+- The simulation defaults to three agitation cycles per shooting hold. Release
+  and press shoot again after those cycles to test another agitation endpoint.
+- Edit the values in the AdvantageScope tuning fields themselves. While tuning
+  is active, AdvantageScope republishes its entered values and can overwrite
+  edits sent by another NetworkTables client.
+
+The agitation enable setting is temporary and must be reapplied after restarting
+the simulator. Check **Fuel/AngleTuningStatus**, **Fuel/State**, and
+**Fuel/AutomaticBlockedBy** to distinguish accepted targets from blocked motion.
+
+#### Full configuration workflow in Shuffleboard
+
+The upper position used for feeding and the upward part of agitation is already
+tunable through **Fuel/Config/FeedDegrees**. **Fuel/Config/AgitationDegrees**
+is the intermediate lower position between raises, not the upper endpoint.
+
+| Dashboard setting | What it controls |
+| --- | --- |
+| `Fuel/Config/FeedDegrees` | Raised feeding position, also the upper agitation endpoint |
+| `Fuel/Config/AgitationDegrees` | Intermediate lower endpoint during optional agitation |
+| `Fuel/Config/IntakeDegrees` | Fully deployed pickup/return position (160 degrees) |
+
+Zero is fully up at the reference stop; larger angles are farther down. If the
+intake rises too high, **increase FeedDegrees** in small increments. This also
+changes the initial feeding position when shooting. When agitation is enabled,
+keep its intermediate angle between the feed and deployed angles, separated
+from each endpoint by more than `PositionToleranceDegrees`. If increasing
+FeedDegrees would pass AgitationDegrees, adjust both endpoints while preserving
+that ordering. The correct working angles must be established on the mechanism.
+
+1. Disable the robot and edit the staged angle(s) in Shuffleboard/SmartDashboard.
+2. Invoke **Fuel/Apply configuration (disabled)**. Editing a field alone does not
+   change the active targets. Check `Fuel/ActionStatus` and
+   `Fuel/ConfigurationParseStatus` for the result.
+3. Applying the full configuration invalidates the reference. Put the intake at
+   its actual upper mechanical stop and run **Fuel/Confirm intake at upper stop**;
+   do not zero it at the new working angle. Follow the referencing procedure above.
+4. Enable teleop, release both bumpers to arm, then hold shoot to test the raised
+   position. Optional repeated agitation still requires `AgitationEnabled`.
+5. Disable between adjustments. Accepted feed/agitation angles save automatically
+   across restarts. Other dashboard configuration values remain temporary.
 
 ## Autonomous: back up and shoot preloads
 
@@ -313,7 +426,7 @@ For the existing autonomous example, the starting intake angle must still match
 while disabled set that dashboard value to 0, apply configuration, confirm the
 upper reference, reset six preloads, then select **Back up and shoot preloads**
 and enable Autonomous. This is a SIM-only example, not a verified real preload
-position. Dashboard settings are temporary.
+position. These autonomous dashboard settings are temporary.
 
 `Fuel/Sim/LaunchSpeedMps` (default approximately 6.39 at 3000 motor RPM) is a practice estimate.
 The hood angle is fixed at **80 degrees above horizontal**, matching the supplied

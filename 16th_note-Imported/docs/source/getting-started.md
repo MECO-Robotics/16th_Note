@@ -25,7 +25,7 @@ Actual wiring and inversion still need to be verified on the robot.
 | --- | --- |
 | Left Spark Max | CAN 1, not inverted |
 | Right Spark Max | CAN 2, inverted |
-| Xbox or PS4 controller | USB 0; left-stick Y drives forward/reverse, right-stick X steers |
+| Xbox, PS4, or Logitech Dual Action controller | USB 0; left-stick Y drives forward/reverse, right-stick X steers |
 | Vision assist | Hold Xbox RT past halfway or PS4 R2 |
 | Tank input shaping | 0.02 deadband, signed squaring |
 | Manual assist override | Either stick magnitude greater than 0.15 |
@@ -35,14 +35,17 @@ Wiring and simulation values live in
 The old CAN IDs are not used. Check wheel direction with the robot lifted
 before floor testing.
 
-Connect the controller as USB 0 in Driver Station. Xbox/PS4 layout is detected
+Connect the controller as USB 0 in Driver Station. Xbox/PS4/Logitech Dual Action layout is detected
 automatically: left-stick Y drives forward/reverse and right-stick X turns.
 Check `Drive/ControllerLayout` and `Drive/ControllerConnected` on the dashboard;
 `Drive/ForwardInput` and `Drive/TurnInput` show the requested inputs during teleop.
 If a controller needs a manual override, set
 `TankDriveConstants.AUTO_DETECT_CONTROLLER = false`, then set
-`USE_XBOX_CONTROLLER` to `true` for Xbox or `false` for PS4 and rebuild/deploy.
-`DriverControls` maps LB/L1 to intake and RB/R1 to shoot. The fuel sequence
+`CONTROLLER_LAYOUT` to `Layout.XBOX`, `Layout.PS4`, or
+`Layout.LOGITECH_DUAL_ACTION` and rebuild/deploy.
+`DriverControls` maps LB/L1 (Logitech button 5) to intake and RB/R1
+(Logitech button 6) to shoot. `Drive/RawAxis0` through `Drive/RawAxis5` update
+while disabled for controller troubleshooting. The fuel sequence
 has real SPARK MAX IO, simulation, Test-mode commissioning and preload autonomous.
 Real settings remain unconfigured and must be applied/verified before outputs run.
 See {doc}`fuel-system` for release behavior, simulation and the hardware handoff.

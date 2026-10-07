@@ -1,5 +1,6 @@
 package frc.robot.subsystems.fuel;
 
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
@@ -33,6 +34,8 @@ public final class FuelSystem extends SubsystemBase {
   private FuelConfiguration configuration;
   private final DoubleSupplier clock;
   private FuelDashboard dashboard;
+  private FuelAngleTuning angleTuning;
+  private String angleTuningStatus = "No angle edits applied";
   private final FuelCommissioning commissioning = new FuelCommissioning();
   private Request request = Request.NONE;
   private boolean controllerConnected, intakeRequested, shootRequested;
@@ -56,6 +59,13 @@ public final class FuelSystem extends SubsystemBase {
       io.invalidateReference("Startup: confirm simulated upper reference");
     var system = new FuelSystem(io, config, Timer::getFPGATimestamp);
     system.dashboard = new FuelDashboard(config);
+    system.angleTuning =
+        new FuelAngleTuning(
+            config.sequence(),
+            Constants.currentMode == Constants.Mode.REPLAY
+                ? null
+                : new FuelAngleStore(
+                    NetworkTableInstance.getDefault(), Constants.currentMode.name()));
     SmartDashboard.putString("Fuel/Backend", Constants.currentMode.name());
     SmartDashboard.putData(
         "Fuel/Apply configuration (disabled)",
@@ -173,6 +183,8 @@ public final class FuelSystem extends SubsystemBase {
     configuration = config;
     sequence = config.sequence() == null ? null : new FuelSequencer(config.sequence());
     boolean applied = io.configure(config);
+    if (angleTuning != null) angleTuning.synchronize(config.sequence());
+    angleTuningStatus = "Full configuration applied; tuning fields synchronized";
     Logger.recordOutput("Fuel/ActiveConfiguration", config.toString());
     SmartDashboard.putString("Fuel/ActiveConfiguration", config.toString());
     actionStatus =
@@ -180,6 +192,49 @@ public final class FuelSystem extends SubsystemBase {
             ? "Configuration applied; reference intake again"
             : "Some devices are unconfigured or failed; inspect diagnostics";
     return applied;
+  }
+
+  /** Updates sequence targets live in simulation, or while disabled on hardware. */
+  public boolean tuneIntakeAngles(double feed, double agitation) {
+    if (!DriverStation.isDisabled() && !(io instanceof FuelIOSim)) {
+      angleTuningStatus = "Pending: disable to apply intake angles";
+      return false;
+    }
+    if (configuration == null || configuration.sequence() == null) {
+      angleTuningStatus = "Rejected: configure fuel sequence first";
+      return false;
+    }
+    Settings next;
+    try {
+      next = FuelAngleTuning.validate(configuration.sequence(), feed, agitation);
+    } catch (IllegalArgumentException e) {
+      angleTuningStatus = "Rejected: " + e.getMessage();
+      return false;
+    }
+    if (!next.equals(configuration.sequence())) {
+      var c = configuration;
+      configuration =
+          new FuelConfiguration(
+              c.devices(),
+              c.coupling(),
+              c.followerCompatible(),
+              c.followerInverted(),
+              c.pivot(),
+              next,
+              c.auto());
+      sequence.tuneIntakeAngles(feed, agitation, clock.getAsDouble());
+      SmartDashboard.putNumber("Fuel/Config/FeedDegrees", feed);
+      SmartDashboard.putNumber("Fuel/Config/AgitationDegrees", agitation);
+      Logger.recordOutput("Fuel/ActiveConfiguration", configuration.toString());
+      SmartDashboard.putString("Fuel/ActiveConfiguration", configuration.toString());
+    }
+    if (angleTuning != null) angleTuning.remember(next);
+    angleTuningStatus =
+        "Applied intake angles; existing reference preserved"
+            + (next.agitationEnabled()
+                ? ""
+                : "; agitation is off: FeedDegrees controls the shooting position");
+    return true;
   }
 
   public boolean confirmUpperReference() {
@@ -251,6 +306,7 @@ public final class FuelSystem extends SubsystemBase {
 
   @Override
   public void periodic() {
+    if (angleTuning != null) angleTuning.update(this);
     double now = clock.getAsDouble();
     io.updateInputs(inputs);
     FuelMode mode = FuelMode.current();
@@ -346,6 +402,18 @@ public final class FuelSystem extends SubsystemBase {
     SmartDashboard.putString("Fuel/Devices", inputs.configurationStatus);
     SmartDashboard.putString("Fuel/Reference", inputs.referenceStatus);
     SmartDashboard.putString("Fuel/ActionStatus", actionStatus);
+    Logger.recordOutput("Fuel/AngleTuningStatus", angleTuningStatus);
+    Logger.recordOutput(
+        "Fuel/ActiveFeedDegrees",
+        configuration == null || configuration.sequence() == null
+            ? Double.NaN
+            : configuration.sequence().feedDegrees());
+    Logger.recordOutput(
+        "Fuel/ActiveAgitationDegrees",
+        configuration == null || configuration.sequence() == null
+            ? Double.NaN
+            : configuration.sequence().agitationDegrees());
+    SmartDashboard.putString("Fuel/AngleTuningStatus", angleTuningStatus);
     SmartDashboard.putString("Fuel/Test/Status", commissioning.status());
     if (dashboard != null)
       SmartDashboard.putString("Fuel/ConfigurationParseStatus", dashboard.parseStatus());

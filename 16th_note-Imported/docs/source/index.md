@@ -18,7 +18,7 @@ customizing
 
 ## Current capabilities
 
-- Xbox/PS4 arcade control with CAN SPARK MAX outputs.
+- Xbox/PS4/Logitech Dual Action arcade control with CAN SPARK MAX outputs.
 - Trigger-held vision assist with manual override and request freshness checks.
 - Separate real, physics simulation, and replay IO implementations.
 - Logged drivetrain inputs and requested voltages.

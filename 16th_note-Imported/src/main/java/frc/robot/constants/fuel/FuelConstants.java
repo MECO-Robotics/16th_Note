@@ -196,6 +196,30 @@ public final class FuelConstants {
           secondarySpeedToleranceMotorRpm);
     }
 
+    public Settings withIntakeAngles(double feed, double agitation) {
+      return new Settings(
+          minDegrees,
+          maxDegrees,
+          intakeDegrees,
+          feed,
+          agitation,
+          positionToleranceDegrees,
+          shooterPrimaryMotorRpm,
+          primarySpeedToleranceMotorRpm,
+          readySeconds,
+          spinupTimeoutSeconds,
+          motionTimeoutSeconds,
+          feedDwellSeconds,
+          agitationDwellSeconds,
+          maxAgitationCycles,
+          agitationEnabled,
+          maxFeedbackAgeSeconds,
+          intakeDutyCycle,
+          indexerDutyCycle,
+          shooterSecondaryMotorRpm,
+          secondarySpeedToleranceMotorRpm);
+    }
+
     public Settings withAgitation(boolean enabled) {
       return new Settings(
           minDegrees,

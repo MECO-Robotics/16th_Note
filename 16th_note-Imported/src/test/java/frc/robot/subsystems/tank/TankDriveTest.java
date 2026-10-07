@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.controls.DriverControls;
+import frc.robot.controls.DriverControls.Layout;
 import frc.robot.sim.tank.TankDriveIOSim;
 import frc.robot.vision.TankVisionDriveAdapter;
 import org.junit.jupiter.api.AfterEach;
@@ -67,14 +70,18 @@ class TankDriveTest {
   }
 
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
-  void arcadeControlsAndModeTransitions(boolean useXbox) {
+  @org.junit.jupiter.params.provider.CsvSource({
+    "Xbox Controller, 4, true",
+    "Wireless Controller, 2, false",
+    "Logitech Dual Action, 2, false",
+    "Logitech Dual Action, 4, true"
+  })
+  void arcadeControlsAndModeTransitions(String name, int rightXAxis, boolean useXbox) {
     var controllerSim = new edu.wpi.first.wpilibj.simulation.GenericHIDSim(0);
-    controllerSim.setAxisCount(6);
+    controllerSim.setAxisCount(name.contains("Dual Action") && !useXbox ? 4 : 6);
     controllerSim.setButtonCount(14);
-    controllerSim.setName(useXbox ? "Xbox Controller" : "Wireless Controller");
+    controllerSim.setName(name);
     DriverStationSim.setJoystickIsXbox(0, useXbox);
-    int rightXAxis = useXbox ? 4 : 2;
     try (var vision = new org.mecorobotics.gamepiecevision.GamePieceVisionClient("teleop-test")) {
       var command =
           new frc.robot.commands.drive.TankTeleopCommand(
@@ -112,9 +119,18 @@ class TankDriveTest {
       controllerSim.setRawAxis(1, -1);
       controllerSim.notifyNewData();
       command.execute();
+      controllerSim.setAxisCount(0);
+      controllerSim.setButtonCount(0);
+      controllerSim.setPOVCount(0);
+      controllerSim.notifyNewData();
+      command.execute();
+      assertEquals(0, io.left);
+      assertEquals(0, io.right);
       command.end(true);
       assertEquals(0, io.left);
       assertEquals(0, io.right);
+      controllerSim.setAxisCount(6);
+      controllerSim.setButtonCount(14);
 
       DriverStationSim.setAutonomous(true);
       DriverStationSim.notifyNewData();
@@ -125,9 +141,9 @@ class TankDriveTest {
   }
 
   @org.junit.jupiter.params.ParameterizedTest
-  @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
-  void controllerActionMappings(boolean useXbox) {
-    var controls = new frc.robot.controls.DriverControls(0, useXbox);
+  @org.junit.jupiter.params.provider.EnumSource(Layout.class)
+  void controllerActionMappings(Layout layout) {
+    var controls = new DriverControls(0, false, layout);
     var sim = new edu.wpi.first.wpilibj.simulation.GenericHIDSim(0);
     sim.setAxisCount(6);
     sim.setButtonCount(14);
@@ -144,7 +160,7 @@ class TankDriveTest {
     sim.notifyNewData();
     assertFalse(controls.isIntakeRequested());
     assertTrue(controls.isShootRequested());
-    if (useXbox) {
+    if (layout == Layout.XBOX) {
       sim.setRawAxis(3, 0.5);
       sim.notifyNewData();
       assertFalse(controls.isVisionAssistRequested());
@@ -160,6 +176,54 @@ class TankDriveTest {
     sim.notifyNewData();
     assertFalse(controls.isVisionAssistRequested());
     assertFalse(controls.isShootRequested());
+  }
+
+  @Test
+  void logitechDetectionOverridesAndDisabledDiagnostics() {
+    var sim = new edu.wpi.first.wpilibj.simulation.GenericHIDSim(0);
+    sim.setAxisCount(4);
+    sim.setButtonCount(12);
+    sim.setName("Logitech Dual Action USB");
+    sim.setRawAxis(1, -.75);
+    sim.setRawAxis(2, .6);
+    sim.setRawAxis(3, -.9); // Right-stick vertical must not turn the robot.
+    DriverStationSim.setEnabled(false);
+    sim.notifyNewData();
+    var controls = new DriverControls(0, true, Layout.XBOX);
+    assertEquals(Layout.LOGITECH_DUAL_ACTION, controls.layout());
+    assertEquals(.6, controls.getRightX(), 1e-6);
+    controls.publishDiagnostics();
+    assertEquals(
+        "Logitech Dual Action (auto)", SmartDashboard.getString("Drive/ControllerLayout", ""));
+    assertEquals(4, SmartDashboard.getNumber("Drive/ControllerAxisCount", -1));
+    assertEquals(.6, SmartDashboard.getNumber("Drive/RawAxis2", 0), 1e-6);
+    assertEquals(0, SmartDashboard.getNumber("Drive/RawAxis4", -1));
+    assertEquals(0, io.left);
+    assertEquals(0, io.right);
+
+    // A manual selection works even if the reported Xbox flag is wrong.
+    DriverStationSim.setJoystickIsXbox(0, true);
+    sim.notifyNewData();
+    assertEquals(Layout.XBOX, controls.layout());
+    var manual = new DriverControls(0, false, Layout.LOGITECH_DUAL_ACTION);
+    assertEquals(.6, manual.getRightX(), 1e-6);
+    assertEquals("Logitech Dual Action (manual)", manual.layoutName());
+
+    DriverStationSim.setJoystickIsXbox(0, false);
+    sim.setName("");
+    sim.notifyNewData();
+    assertEquals(Layout.XBOX, controls.layout());
+    assertEquals(
+        Layout.LOGITECH_DUAL_ACTION,
+        new DriverControls(0, true, Layout.LOGITECH_DUAL_ACTION).layout());
+
+    sim.setAxisCount(0);
+    sim.setButtonCount(0);
+    sim.setPOVCount(0);
+    sim.notifyNewData();
+    controls.publishDiagnostics();
+    assertFalse(SmartDashboard.getBoolean("Drive/ControllerConnected", true));
+    assertEquals(0, SmartDashboard.getNumber("Drive/RawAxis2", -1));
   }
 
   @Test

@@ -2,8 +2,10 @@
 
 Controller layout is detected from Driver Station joystick metadata. A harness
 sending PS4 axes should identify the device as a non-Xbox `Wireless Controller`.
-For unnamed simulation devices, `TankDriveConstants.USE_XBOX_CONTROLLER` selects
-the fallback (Xbox by default); set it to `false` for unnamed PS4 harnesses.
+For unnamed simulation devices, `TankDriveConstants.CONTROLLER_LAYOUT` selects
+the fallback (Xbox by default); set it to `Layout.PS4` for unnamed PS4 harnesses.
+For Logitech inputs, use the name `Logitech Dual Action` with the Xbox flag false
+or select `Layout.LOGITECH_DUAL_ACTION` as the fallback.
 Set `AUTO_DETECT_CONTROLLER = false` to force that selection for any device.
 
 This check runs the actual robot program and uses a separate NT4 client to
