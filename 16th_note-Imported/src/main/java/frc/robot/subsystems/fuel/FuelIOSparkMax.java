@@ -18,7 +18,7 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/** Five NEOs; every output path checks the runtime mode and verified configuration. */
+/** Two shooters, two shared-shaft indexer motors, and one pivot NEO. */
 public final class FuelIOSparkMax implements FuelIO {
   private final Map<Role, FuelMotor> motors = new EnumMap<>(Role.class);
   private final Map<Role, FuelMotor.Sample> samples = new EnumMap<>(Role.class);
@@ -194,13 +194,14 @@ public final class FuelIOSparkMax implements FuelIO {
     }
     for (Role role : Role.values())
       inputs.configured[role.ordinal()] = configured.getOrDefault(role, false);
-    inputs.intakeAppliedDuty = samples.get(Role.ROLLERS).appliedDuty();
-    inputs.indexerAppliedDuty = samples.get(Role.INDEXER).appliedDuty();
+    double sharedAppliedDuty = samples.get(Role.INDEXER_PRIMARY).appliedDuty();
+    inputs.intakeAppliedDuty = sharedAppliedDuty;
+    inputs.indexerAppliedDuty = sharedAppliedDuty;
     inputs.available = allConfigured();
     inputs.healthy = java.util.Arrays.stream(Role.values()).allMatch(this::healthy);
     inputs.shooterPrimaryConnected = healthy(Role.SHOOTER_PRIMARY);
     inputs.shooterSecondaryConnected = healthy(Role.SHOOTER_SECONDARY);
-    inputs.indexerConnected = healthy(Role.INDEXER);
+    inputs.indexerConnected = healthy(Role.INDEXER_PRIMARY) && healthy(Role.INDEXER_SECONDARY);
     inputs.referenced = referenced;
     inputs.pivotDegrees = samples.containsKey(Role.PIVOT) ? positionDegrees() : 0;
     inputs.shooterPrimaryMotorRpm =
@@ -280,8 +281,14 @@ public final class FuelIOSparkMax implements FuelIO {
           Role.SHOOTER_SECONDARY,
           output.shooterSecondaryMotorRpm(),
           config.sequence().shooterSecondaryMotorRpm());
-    volts(Role.ROLLERS, MathUtil.clamp(output.intakeDuty(), -1, 1) * 12);
-    volts(Role.INDEXER, MathUtil.clamp(output.indexerDuty(), -1, 1) * 12);
+    // The indexer shaft mechanically drives the intake rollers 1:1. Intake and feed are separate
+    // sequence intents, but both must command the same pair of motors.
+    double sharedDuty =
+        Math.abs(output.indexerDuty()) >= Math.abs(output.intakeDuty())
+            ? output.indexerDuty()
+            : output.intakeDuty();
+    volts(Role.INDEXER_PRIMARY, MathUtil.clamp(sharedDuty, -1, 1) * 12);
+    volts(Role.INDEXER_SECONDARY, MathUtil.clamp(sharedDuty, -1, 1) * 12);
     if (safety != null) {
       safety.feed();
       safety.setSafetyEnabled(true);
@@ -311,8 +318,7 @@ public final class FuelIOSparkMax implements FuelIO {
     return switch (selection) {
       case NONE -> false;
       case PIVOT -> healthy(Role.PIVOT) && referenced;
-      case ROLLERS -> healthy(Role.ROLLERS);
-      case INDEXER -> healthy(Role.INDEXER);
+      case INDEXER_PAIR -> healthy(Role.INDEXER_PRIMARY) && healthy(Role.INDEXER_SECONDARY);
       case SHOOTERS -> healthy(Role.SHOOTER_PRIMARY)
           && healthy(Role.SHOOTER_SECONDARY)
           && config.shooterIssues().isEmpty();
@@ -335,6 +341,10 @@ public final class FuelIOSparkMax implements FuelIO {
         return;
     }
     volts(role, volts);
+    if (selection == FuelCommissioning.Selection.INDEXER_PAIR) {
+      double secondaryCap = config.device(Role.INDEXER_SECONDARY).testVolts();
+      volts(Role.INDEXER_SECONDARY, MathUtil.clamp(volts, -secondaryCap, secondaryCap));
+    }
     if (selection == FuelCommissioning.Selection.SHOOTERS
         && config.coupling() == Coupling.INDEPENDENT) {
       double secondaryCap = config.device(Role.SHOOTER_SECONDARY).testVolts();

@@ -20,11 +20,11 @@ public record FuelConfiguration(
   public static final double DEGREES_PER_MOTOR_ROTATION = 360.0 / PIVOT_RATIO;
 
   public enum Role {
-    SHOOTER_PRIMARY(3),
-    PIVOT(4),
-    ROLLERS(5),
-    SHOOTER_SECONDARY(6),
-    INDEXER(7);
+    SHOOTER_PRIMARY(FuelConstants.SHOOTER_PRIMARY_CAN_ID),
+    SHOOTER_SECONDARY(FuelConstants.SHOOTER_SECONDARY_CAN_ID),
+    INDEXER_PRIMARY(FuelConstants.INDEXER_PRIMARY_CAN_ID),
+    INDEXER_SECONDARY(FuelConstants.INDEXER_SECONDARY_CAN_ID),
+    PIVOT(FuelConstants.INTAKE_PIVOT_CAN_ID);
     public final int canId;
 
     Role(int canId) {

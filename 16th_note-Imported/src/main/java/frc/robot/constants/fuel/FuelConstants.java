@@ -3,9 +3,10 @@ package frc.robot.constants.fuel;
 /** Pivot settings use intake degrees; shooter targets use motor RPM. */
 public final class FuelConstants {
   /**
-   * Provisional motor-speed starting point from 2026-Rebuilt's close-hub preset: 30 wheel RPS * 60
-   * * its 22/14 motor-to-wheel ratio. This is NOT a measured 16th Note ratio or a guarantee of the
-   * same wheel/ball speed. Tune each motor separately.
+   * Provisional speed starting point from 2026-Rebuilt's close-hub preset: 30 wheel RPS * 60 *
+   * 22/14 motor rotations per wheel rotation. The owner confirmed 14T motor pulleys driving 22T
+   * flywheel pulleys on both sides of 16th Note. This is not a calibrated shot or a guarantee of
+   * equal ball exit speed. Tune each motor separately.
    */
   public static final double INITIAL_SHOOTER_PRIMARY_MOTOR_RPM = 30.0 * 60.0 * (22.0 / 14.0);
 
@@ -19,10 +20,10 @@ public final class FuelConstants {
 
   // Reserved IDs only; this does not configure or instantiate any hardware.
   public static final int SHOOTER_PRIMARY_CAN_ID = 3;
-  public static final int INTAKE_PIVOT_CAN_ID = 4;
-  public static final int INTAKE_ROLLER_CAN_ID = 5;
-  public static final int SHOOTER_SECONDARY_CAN_ID = 6;
-  public static final int INDEXER_CAN_ID = 7;
+  public static final int SHOOTER_SECONDARY_CAN_ID = 4;
+  public static final int INDEXER_PRIMARY_CAN_ID = 5;
+  public static final int INDEXER_SECONDARY_CAN_ID = 6;
+  public static final int INTAKE_PIVOT_CAN_ID = 7;
 
   /** Example values for software simulation only; none are calibrated robot measurements. */
   public static final Settings SIMULATION =

@@ -14,25 +14,118 @@ commissioning without enabling the complete automatic sequence. SIM uses its
 own example configuration; those numbers are not robot measurements.
 
 The drivetrain retains CAN IDs 1–2 and its existing controls. Every mechanism
-motor is a brushless NEO controlled by a SPARK MAX:
+motor is a brushless NEO controlled by a SPARK MAX.
 
-| CAN ID | Configuration role | Mechanism |
+### Consecutive CAN assignments
+
+The owner requested consecutive IDs to make the motor assignments easy to track.
+Keep the drivetrain at 1–2 and group the paired shooter and indexer motors:
+
+| CAN ID | Software role | Physical motor label |
 | --- | --- | --- |
-| 3 | `SHOOTER_PRIMARY` | Primary shooter motor |
-| 4 | `PIVOT` | Intake movement |
-| 5 | `ROLLERS` | Intake rollers |
-| 6 | `SHOOTER_SECONDARY` | Secondary shooter motor |
-| 7 | `INDEXER` | Independently controlled indexer |
+| 1 | `LEFT_CAN_ID` | Left drivetrain |
+| 2 | `RIGHT_CAN_ID` | Right drivetrain |
+| 3 | `SHOOTER_PRIMARY` | Shooter A — 14T motor pulley driving 22T flywheel pulley |
+| 4 | `SHOOTER_SECONDARY` | Shooter B — matching shooter drive |
+| 5 | `INDEXER_PRIMARY` | Indexer A — first motor on the shared indexer shaft |
+| 6 | `INDEXER_SECONDARY` | Indexer B — second motor on the same indexer shaft |
+| 7 | `PIVOT` | Intake pivot — chain drive that raises/lowers the intake |
 
-Assign these IDs in REV Hardware Client; the robot code does not change IDs.
-Intake rollers and indexer are independently powered but coaxial. Shooter
-shaft coupling, directions and ratios still require confirmation.
+There is no separate intake-roller motor: the shared indexer shaft
+drives the intake rollers through the reported 1:1 belt. Label the physical motors
+A/B to match this table; the labels do not imply left/right mounting or direction.
+
+The software mapping now matches this table. Program these IDs into the physical
+SPARK MAX controllers before applying a real configuration; robot code cannot
+change device IDs. Intake collection and shooting feed both command indexer motors
+5 and 6 together. Their per-controller inversion fields must be set so both motors
+assist each other on the shared shaft. If either motor is unhealthy, automatic
+fuel operation and `INDEXER_PAIR` commissioning are blocked. Shooter
+shaft coupling and directions still require confirmation. The owner reports a
+14T motor pulley driving a 22T flywheel pulley on both sides, superseding the
+earlier CAD-inferred 1:1 estimate.
+
+## Reported shooter geometry
+
+The following dimensions were supplied by the robot owner:
+
+| Measurement | Value |
+| --- | --- |
+| Shooter wheel diameter | 4 inches (101.6 mm) |
+| Ball compression against the rear shooter plate | 1/4 inch (6.35 mm), as reported |
+| Intake compression | Not yet measured |
+| Shooter drive arrangement | Two motors and two belts; matching drive arrangement on both sides, as reported |
+| Primary shooter pulley sizes | 14T motor driving 22T flywheel, confirmed by owner on 2026-10-08 |
+| Secondary shooter pulley sizes | 14T motor driving 22T flywheel, confirmed by owner on 2026-10-08 |
+| Motor rotations per flywheel rotation | 22/14, approximately 1.5714:1, on both sides |
+| Belt specification | 60 teeth, 5 mm pitch: 300 mm pitch length, as reported |
+
+The previous 24T/24T inference assumed equal pulleys from block CAD; it is no
+longer the working ratio. The screenshot's 3.543-inch shaft spacing (3.453 inches
+in the written message), the reported 0.725-inch curve radii, and the belt
+specification still need reconciliation with the actual 14T/22T drive geometry.
+
+With the confirmed pulley order,
+`flywheel RPM = motor RPM * 14 / 22`, and
+`motor RPM = flywheel RPM * 22 / 14`. For example, 3000 motor RPM corresponds
+to approximately 1909 flywheel RPM. Two motors do not double the
+ratio. This information does not establish whether the motors drive a shared
+shaft or separate shafts, so it does not select follower mode or confirm coupling.
+
+The compression measurement describes ball squeeze, not the absolute wheel-to-plate
+gap. Confirm the measurement reference when documenting that gap.
+
+Wheel diameter matters for surface speed: `surface speed = pi * diameter * wheel RPM / 60`.
+For these wheels, use 0.1016 m for diameter to obtain m/s. Motor RPM must first be
+converted to wheel RPM using the actual shooter ratio. Ball exit speed still
+requires measurement; wheel slip, compression, and contact geometry affect how
+the ball accelerates. These dimensions alone do not establish a calibrated RPM
+target or justify changing the simulation's launch-speed calibration.
+
+## Reported intake and indexer belt measurements
+
+On 2026-10-08, the owner supplied these pulley radii. The largest pulley moves
+the whole intake (pivot), rather than spinning an intake or indexer roller.
+The table is a preliminary interpretation of the paths; motor identities,
+intermediate shaft connections, and whether these are pitch radii remain unconfirmed.
+
+The owner subsequently clarified that there are **three separate motors**:
+one drives a **chain that pivots the intake**, and the other two both drive
+**the same indexer shaft**, now confirmed by the owner. The owner
+reports a **1:1 belt drive from the indexer to the intake rollers**, superseding
+the earlier 1.300 speed estimate for that connection. The two indexer motors need
+coordinated output and verified directions so they assist each other on the shared
+shaft. The intake rollers and indexer are mechanically linked and cannot be
+commanded as independently stoppable mechanisms under this reported arrangement.
+The CAN assignments are now established above, and the software commands the pair
+together. Equal motor-to-shaft ratios, motor directions, and any pivot gearbox
+reduction still need physical confirmation before applying the real configuration.
+
+| Interpreted belt path | Driving radius | Driven radius | Output speed / input speed |
+| --- | --- | --- | --- |
+| Indexer-side shaft to intake roller (earlier measurements) | 0.815 in | 0.627 in | Superseded by owner's reported 1:1 ratio; measured surfaces/path need reconciliation |
+| Intake pivot chain stage (earlier radius measurements) | 0.376 in | 1.593 in | Approximately 0.236 if pitch radii (4.237:1 reduction); tooth counts needed |
+| Motor-side pulley to indexer | 0.376 in | 0.815 in | Approximately 0.461 (2.168:1 reduction) |
+| Second indexer motor to the shared indexer shaft | 0.376 in | 0.815 in | Approximately 0.461 (2.168:1 reduction); pitch radii/tooth counts unverified |
+
+These estimates use driving radius divided by driven radius and exclude any
+motor gearbox reduction. Outside or inside pulley/belt or sprocket radii are not necessarily
+pitch radii; exact tooth counts are preferable. Do not multiply these stages
+together unless their shaft connections establish that they are in series.
+
+Confirm whether the pivot motor has a gearbox and reconcile the preliminary radius
+measurements with the confirmed mechanism layout.
+The inferred 4.237:1 pivot chain stage does not by itself establish the complete
+motor-to-intake ratio or reconcile the existing 20:1 conversion. No runtime ratio
+was changed from these preliminary measurements.
 
 ## Units and configuration readiness
 
 Pivot feedback is **intake degrees**, calculated from raw motor rotations:
-`degrees = motor rotations × feedback sign × 360 / 20`. The confirmed ratio is
-20:1, so one motor turn corresponds to 18 intake degrees. Zero is the verified
+`degrees = motor rotations × feedback sign × 360 / 20`. The currently configured
+ratio is 20:1, so one motor turn corresponds to 18 intake degrees; reconcile this
+with the newly reported pivot chain path before treating it as a verified total
+reduction. Zero is the verified
 upper frame-contact stop; positive degrees lower the intake. Confirmed total
 stowed-to-deployed travel is **160 degrees**, so the deployed target is 160.
 The real dashboard prefills `IntakeDegrees` and `Pivot/MaxDegrees` with 160;
@@ -50,8 +143,10 @@ open-loop output, so their ratios need not be known yet.
 For an unconfigured real robot, `Fuel/Config/PrimaryMotorRpm` and
 `Fuel/Config/SecondaryMotorRpm` now start at **2828.57 motor RPM**. This copies
 2026-Rebuilt's close-hub motor speed: its 30 wheel RPS preset times 60 times its
-22/14 motor-to-wheel ratio. That ratio belongs to REBUILT, not 16th Note; the
-result is only a provisional motor-speed starting point, not a calibrated shot
+22/14 motor-to-wheel ratio. The owner has now confirmed that 16th Note also uses
+14T motor pulleys driving 22T flywheel pulleys on both sides. The existing target
+therefore corresponds to 1800 flywheel RPM, but remains a provisional starting
+point, not a calibrated shot
 or a promise of equal wheel speed. Both targets can be tuned independently.
 Their checked-in starting values are `INITIAL_SHOOTER_PRIMARY_MOTOR_RPM` and
 `INITIAL_SHOOTER_SECONDARY_MOTOR_RPM` in `FuelConstants`. Current limits,
@@ -136,7 +231,7 @@ stops the drivetrain, and ends when Test mode ends.
 
 1. While disabled, apply the selected mechanism's electrical limits. Leave
    automatic settings unconfigured until measured.
-2. Select `PIVOT`, `ROLLERS`, `INDEXER`, or `SHOOTERS` under `Fuel/Test/Mechanism`.
+2. Select `PIVOT`, `INDEXER_PAIR`, or `SHOOTERS` under `Fuel/Test/Mechanism`.
 3. Set `Fuel/Test/Volts` to the intended signed test voltage. It defaults to zero.
 4. Enable **Test mode**, release RB/R1, then hold RB/R1 to run the test.
 5. Release the bumper to stop. Inspect `Fuel/Test/Status` and recorded diagnostics.
@@ -149,7 +244,7 @@ require confirmed coupling. Direction may remain unconfirmed during low-output
 direction tests; mark it confirmed only after checking it. Reapplying a changed
 inversion/sign requires another intake reference.
 
-A continuous hold is bounded to **0.25 s for pivot**, **1 s for rollers/indexer**,
+A continuous hold is bounded to **0.25 s for pivot**, **1 s for the indexer pair**,
 and **5 s for the shooter pair**. After a burst, release to rearm. The pivot jog
 can measure travel before automatic angles or gains exist. Physical travel still
 needs operator supervision while the lower limit is unknown. Disabled neutral
@@ -343,8 +438,9 @@ measurements exist, but must not be copied to REAL as calibrated settings.
 
 AdvantageKit `Fuel/Inputs` logs per-device configuration/connection flags, raw motor
 rotations/RPM, voltage/current/temperature, reset/brownout/fault indications,
-reference state, requests and timestamps. Array order is primary shooter, pivot,
-rollers, secondary shooter, indexer (CAN 3–7). Commands, state and fault reasons are
+reference state, requests and timestamps. Array order is primary shooter, secondary
+shooter, primary indexer, secondary indexer, then pivot (CAN 3–7).
+Commands, state and fault reasons are
 recorded under `Fuel/`. Controller read success and the 100 ms periodic-frame timeout
 are health evidence; `ageSeconds` is a successful-read gate, **not a timestamp of a
 newly received CAN frame**. There is no fabricated freshness measurement.
@@ -361,7 +457,7 @@ These tests do not prove the physical robot is commissioned.
 
 ## Ordered hardware handoff
 
-1. Verify five devices and CAN IDs. Select conservative mechanism-appropriate
+1. Verify the five mechanism devices and CAN IDs 3–7. Select conservative mechanism-appropriate
    current and test-output limits; apply disabled and confirm stop behavior.
 2. Establish the pivot reference. Check inversion/feedback sign with bounded jogs,
    re-reference after configuration changes, then measure deployed travel and a

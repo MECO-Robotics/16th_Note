@@ -29,13 +29,17 @@ public interface FuelIO {
     public boolean healthy = false;
     public boolean shooterPrimaryConnected = false;
     public boolean shooterSecondaryConnected = false;
+    /** True only when both motors on the shared indexer/intake shaft are healthy. */
     public boolean indexerConnected = false;
+
     public boolean referenced = false;
     public double pivotDegrees = 0;
     // Both speeds use positive shooting-direction, motor RPM.
     public double shooterPrimaryMotorRpm = 0;
     public double shooterSecondaryMotorRpm = 0;
     public double ageSeconds = 0;
+    // These compatibility fields are separate in simulation. Real hardware reports the same
+    // shared-shaft output in both fields.
     public double intakeAppliedDuty = 0;
     public double indexerAppliedDuty = 0;
     // Operator and mode inputs are logged with feedback so replay uses the original decisions.

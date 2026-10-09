@@ -21,6 +21,11 @@ The team number is 8324 in `.wpilib/wpilib_preferences.json`.
 The drivetrain uses two CAN SPARK MAX controllers.
 Actual wiring and inversion still need to be verified on the robot.
 
+The complete CAN allocation is drivetrain 1–2, shooters 3–4, shared-shaft
+indexer motors 5–6, and intake pivot 7. The software mapping matches these IDs;
+program the physical SPARK MAX IDs to match before applying a real configuration.
+See {doc}`fuel-system` for the full assignment and commissioning procedure.
+
 | Item | Configuration |
 | --- | --- |
 | Left Spark Max | CAN 1, not inverted |
@@ -71,8 +76,9 @@ returns control to the sticks. Strafe is unused by the tank drivetrain.
 The base disables the simulation GUI by default to support log replay.
 Enable the GUI through WPILib's simulation selection when interactive driving
 is needed, assign the selected controller to slot 0, and enable teleop in the simulated
-Driver Station. The physics model uses estimated gearing and dimensions;
-it is not calibrated to the real robot.
+Driver Station. The physics model uses the reported 4:1 overall drive reduction
+and 3-inch wheels, with 9.414-inch track width; mass and inertia remain estimates. It is not
+fully calibrated to the real robot.
 
 Runtime selection lives in `frc.robot.constants.Constants`, a different class
 from the robot-specific vision settings in `frc.robot.Constants`:

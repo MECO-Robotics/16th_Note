@@ -7,15 +7,13 @@ public final class FuelCommissioning {
   public enum Selection {
     NONE,
     PIVOT,
-    ROLLERS,
-    INDEXER,
+    INDEXER_PAIR,
     SHOOTERS;
 
     public Role role() {
       return switch (this) {
         case PIVOT -> Role.PIVOT;
-        case ROLLERS -> Role.ROLLERS;
-        case INDEXER -> Role.INDEXER;
+        case INDEXER_PAIR -> Role.INDEXER_PRIMARY;
         case SHOOTERS -> Role.SHOOTER_PRIMARY;
         case NONE -> throw new IllegalStateException("No mechanism selected");
       };

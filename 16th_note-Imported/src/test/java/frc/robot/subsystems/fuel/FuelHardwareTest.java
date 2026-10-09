@@ -145,17 +145,39 @@ class FuelHardwareTest {
   void configurationFailureBlocksOnlyThatDeviceForCommissioning() {
     Motor failed = new Motor();
     failed.configOk = false;
-    motors.put(Role.INDEXER, failed);
+    motors.put(Role.INDEXER_SECONDARY, failed);
     var io = create(config());
     io.updateInputs(inputs);
     assertFalse(inputs.available);
-    assertFalse(io.commissioningReady(FuelCommissioning.Selection.INDEXER));
-    assertTrue(io.commissioningReady(FuelCommissioning.Selection.ROLLERS));
+    assertFalse(io.commissioningReady(FuelCommissioning.Selection.INDEXER_PAIR));
     mode = FuelMode.TEST;
-    io.commissioning(FuelCommissioning.Selection.ROLLERS, 100);
-    assertEquals(1, motors.get(Role.ROLLERS).volts);
+    io.commissioning(FuelCommissioning.Selection.INDEXER_PAIR, 100);
+    assertEquals(0, motors.get(Role.INDEXER_PRIMARY).volts);
     io.apply(shot());
     assertStopped();
+  }
+
+  @Test
+  void intakeAndFeedIntentsDriveBothSharedShaftMotorsTogether() {
+    var io = create(config());
+    reference(io);
+    mode = FuelMode.TELEOP;
+    io.apply(new FuelSequencer.Output(true, 20, 0, 0, .5, 0));
+    assertEquals(6, motors.get(Role.INDEXER_PRIMARY).volts);
+    assertEquals(6, motors.get(Role.INDEXER_SECONDARY).volts);
+    io.apply(new FuelSequencer.Output(true, 20, 3000, 3000, 0, .35));
+    assertEquals(4.2, motors.get(Role.INDEXER_PRIMARY).volts, 1e-9);
+    assertEquals(4.2, motors.get(Role.INDEXER_SECONDARY).volts, 1e-9);
+  }
+
+  @Test
+  void commissioningRunsOnlyTheHealthySharedIndexerPair() {
+    var io = create(config());
+    io.updateInputs(inputs);
+    mode = FuelMode.TEST;
+    io.commissioning(FuelCommissioning.Selection.INDEXER_PAIR, 100);
+    assertEquals(1, motors.get(Role.INDEXER_PRIMARY).volts);
+    assertEquals(1, motors.get(Role.INDEXER_SECONDARY).volts);
   }
 
   @Test

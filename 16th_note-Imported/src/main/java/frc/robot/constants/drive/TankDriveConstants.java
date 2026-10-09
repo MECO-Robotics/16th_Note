@@ -14,12 +14,15 @@ public final class TankDriveConstants {
       frc.robot.controls.DriverControls.Layout.XBOX;
   public static final double DEADBAND = 0.02;
   public static final double MAX_VOLTS = 12.0;
-  // Simulation estimates only. Measure the robot before using model-based autonomous.
-  public static final double SIM_GEAR_RATIO = 10.71;
+  // Owner-reported MAXPlanetary 4:1 gearbox, with 22T output driving 22T wheel sprockets.
+  public static final double SIM_GEAR_RATIO = 4.0;
+  // Owner-reported 3-inch drive-wheel diameter (1.5-inch radius).
+  public static final double SIM_WHEEL_RADIUS_METERS = 0.0381;
+  // Remaining simulation estimates. Measure before using model-based autonomous.
   public static final double SIM_MASS_KG = 50.0;
   public static final double SIM_MOI_KG_METERS_SQUARED = 6.0;
-  public static final double SIM_WHEEL_RADIUS_METERS = 0.0762;
-  public static final double SIM_TRACK_WIDTH_METERS = 0.6;
+  // Owner-reported left-to-right wheel-center spacing: 9.414 inches.
+  public static final double SIM_TRACK_WIDTH_METERS = 9.414 * 0.0254;
 
   private TankDriveConstants() {}
 }

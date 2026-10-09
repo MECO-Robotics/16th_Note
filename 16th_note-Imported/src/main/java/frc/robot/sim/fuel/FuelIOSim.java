@@ -149,8 +149,7 @@ public final class FuelIOSim implements FuelIO {
     volts = MathUtil.clamp(volts, -1, 1);
     switch (selection) {
       case PIVOT -> pivotJogVolts = volts;
-      case ROLLERS -> output = new Output(false, 0, 0, 0, volts / 12, 0);
-      case INDEXER -> output = new Output(false, 0, 0, 0, 0, volts / 12);
+      case INDEXER_PAIR -> output = new Output(false, 0, 0, 0, volts / 12, volts / 12);
       case SHOOTERS -> output =
           new Output(false, 0, Math.abs(volts) * 500, Math.abs(volts) * 500, 0, 0);
       default -> {}
