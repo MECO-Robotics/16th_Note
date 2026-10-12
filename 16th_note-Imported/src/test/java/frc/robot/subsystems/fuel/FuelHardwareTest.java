@@ -181,7 +181,7 @@ class FuelHardwareTest {
   }
 
   @Test
-  void upperReferenceIsDisabledOnlyAndOneMotorTurnIs18Degrees() {
+  void upperReferenceUsesConfirmedSevenPointSevenSevenToOnePivotReduction() {
     var io = create(config());
     io.updateInputs(inputs);
     mode = FuelMode.TEST;
@@ -190,9 +190,10 @@ class FuelHardwareTest {
     reference(io);
     motors.get(Role.PIVOT).rotations = 1;
     io.updateInputs(inputs);
-    assertEquals(18, inputs.pivotDegrees, 1e-9);
+    double degreesPerMotorRotation = 360.0 / ((38.0 / 22.0) * (54.0 / 12.0));
+    assertEquals(degreesPerMotorRotation, inputs.pivotDegrees, 1e-9);
     assertEquals(0, motors.get(Role.PIVOT).min);
-    assertEquals(160.0 / 18, motors.get(Role.PIVOT).max, 1e-9);
+    assertEquals(160.0 / degreesPerMotorRotation, motors.get(Role.PIVOT).max, 1e-9);
     io.stop();
     io.updateInputs(inputs);
     assertTrue(inputs.referenced); // ordinary disabled stop preserves reference
@@ -350,10 +351,11 @@ class FuelHardwareTest {
             new FuelConfiguration(
                 devices, c.coupling(), false, false, c.pivot(), c.sequence(), c.auto()));
     reference(io);
-    assertEquals(-160.0 / 18, motors.get(Role.PIVOT).min, 1e-9);
+    double degreesPerMotorRotation = FuelConfiguration.DEGREES_PER_MOTOR_ROTATION;
+    assertEquals(-160.0 / degreesPerMotorRotation, motors.get(Role.PIVOT).min, 1e-9);
     assertEquals(0, motors.get(Role.PIVOT).max);
     motors.get(Role.PIVOT).rotations = -1;
     io.updateInputs(inputs);
-    assertEquals(18, inputs.pivotDegrees);
+    assertEquals(degreesPerMotorRotation, inputs.pivotDegrees);
   }
 }

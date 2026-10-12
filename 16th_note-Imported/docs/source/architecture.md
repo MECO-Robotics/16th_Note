@@ -28,8 +28,9 @@ reference the upper stop. The fuel
 subsystem logs feedback, operator requests and sequence time together. See
 {doc}`fuel-system` for the operating sequence and remaining hardware integration.
 
-The owner confirmed two indexer motors on one shared shaft, with a 1:1 belt drive
-from the indexer to the intake rollers and a separate intake-pivot motor. Real IO
+The owner confirmed two indexer motors on one shared shaft. Each motor drives the
+shaft through 12T-to-24T gearing, and a 26T-to-20T stage drives the intake rollers.
+A separate motor drives the intake pivot. Real IO
 commands both shared-shaft motors together for intake collection and shooting
 feed, requires both to be healthy, and commissions them only as `INDEXER_PAIR`.
 Simulation retains separate intake/feed intent values for game-piece behavior but

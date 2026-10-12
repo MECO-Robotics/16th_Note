@@ -281,8 +281,8 @@ public final class FuelIOSparkMax implements FuelIO {
           Role.SHOOTER_SECONDARY,
           output.shooterSecondaryMotorRpm(),
           config.sequence().shooterSecondaryMotorRpm());
-    // The indexer shaft mechanically drives the intake rollers 1:1. Intake and feed are separate
-    // sequence intents, but both must command the same pair of motors.
+    // The indexer shaft mechanically drives the intake rollers through 26T -> 20T gearing. Intake
+    // and feed are separate sequence intents, but both must command the same pair of motors.
     double sharedDuty =
         Math.abs(output.indexerDuty()) >= Math.abs(output.intakeDuty())
             ? output.indexerDuty()

@@ -25,14 +25,14 @@ Keep the drivetrain at 1–2 and group the paired shooter and indexer motors:
 | --- | --- | --- |
 | 1 | `LEFT_CAN_ID` | Left drivetrain |
 | 2 | `RIGHT_CAN_ID` | Right drivetrain |
-| 3 | `SHOOTER_PRIMARY` | Shooter A — 14T motor pulley driving 22T flywheel pulley |
+| 3 | `SHOOTER_PRIMARY` | Shooter A — 24T motor pulley driving 24T flywheel pulley |
 | 4 | `SHOOTER_SECONDARY` | Shooter B — matching shooter drive |
 | 5 | `INDEXER_PRIMARY` | Indexer A — first motor on the shared indexer shaft |
 | 6 | `INDEXER_SECONDARY` | Indexer B — second motor on the same indexer shaft |
 | 7 | `PIVOT` | Intake pivot — chain drive that raises/lowers the intake |
 
 There is no separate intake-roller motor: the shared indexer shaft
-drives the intake rollers through the reported 1:1 belt. Label the physical motors
+drives the intake rollers through a 26T-to-20T stage. Label the physical motors
 A/B to match this table; the labels do not imply left/right mounting or direction.
 
 The software mapping now matches this table. Program these IDs into the physical
@@ -40,10 +40,9 @@ SPARK MAX controllers before applying a real configuration; robot code cannot
 change device IDs. Intake collection and shooting feed both command indexer motors
 5 and 6 together. Their per-controller inversion fields must be set so both motors
 assist each other on the shared shaft. If either motor is unhealthy, automatic
-fuel operation and `INDEXER_PAIR` commissioning are blocked. Shooter
-shaft coupling and directions still require confirmation. The owner reports a
-14T motor pulley driving a 22T flywheel pulley on both sides, superseding the
-earlier CAD-inferred 1:1 estimate.
+fuel operation and `INDEXER_PAIR` commissioning are blocked. Shooter directions
+still require physical confirmation. CAD now shows matching 24T pulleys on the
+motor and flywheel on both sides.
 
 ## Reported shooter geometry
 
@@ -55,22 +54,15 @@ The following dimensions were supplied by the robot owner:
 | Ball compression against the rear shooter plate | 1/4 inch (6.35 mm), as reported |
 | Intake compression | Not yet measured |
 | Shooter drive arrangement | Two motors and two belts; matching drive arrangement on both sides, as reported |
-| Primary shooter pulley sizes | 14T motor driving 22T flywheel, confirmed by owner on 2026-10-08 |
-| Secondary shooter pulley sizes | 14T motor driving 22T flywheel, confirmed by owner on 2026-10-08 |
-| Motor rotations per flywheel rotation | 22/14, approximately 1.5714:1, on both sides |
-| Belt specification | 60 teeth, 5 mm pitch: 300 mm pitch length, as reported |
+| Primary shooter pulley sizes | 24T motor driving 24T flywheel, confirmed from completed CAD on 2026-10-10 |
+| Secondary shooter pulley sizes | 24T motor driving 24T flywheel, confirmed from completed CAD on 2026-10-10 |
+| Motor rotations per flywheel rotation | 1:1 on both sides |
 
-The previous 24T/24T inference assumed equal pulleys from block CAD; it is no
-longer the working ratio. The screenshot's 3.543-inch shaft spacing (3.453 inches
-in the written message), the reported 0.725-inch curve radii, and the belt
-specification still need reconciliation with the actual 14T/22T drive geometry.
-
-With the confirmed pulley order,
-`flywheel RPM = motor RPM * 14 / 22`, and
-`motor RPM = flywheel RPM * 22 / 14`. For example, 3000 motor RPM corresponds
-to approximately 1909 flywheel RPM. Two motors do not double the
-ratio. This information does not establish whether the motors drive a shared
-shaft or separate shafts, so it does not select follower mode or confirm coupling.
+The completed CAD supersedes the earlier 14T-to-22T report and the preliminary
+belt-length and radius estimates. Flywheel RPM equals motor RPM on both sides;
+for example, 3000 motor RPM corresponds to 3000 flywheel RPM. Two motors do not
+double the ratio. The motors drive matching shooter arrangements, but their
+directions and feedback signs still require physical verification.
 
 The compression measurement describes ball squeeze, not the absolute wheel-to-plate
 gap. Confirm the measurement reference when documenting that gap.
@@ -82,50 +74,32 @@ requires measurement; wheel slip, compression, and contact geometry affect how
 the ball accelerates. These dimensions alone do not establish a calibrated RPM
 target or justify changing the simulation's launch-speed calibration.
 
-## Reported intake and indexer belt measurements
+## Confirmed intake, indexer and pivot ratios
 
-On 2026-10-08, the owner supplied these pulley radii. The largest pulley moves
-the whole intake (pivot), rather than spinning an intake or indexer roller.
-The table is a preliminary interpretation of the paths; motor identities,
-intermediate shaft connections, and whether these are pitch radii remain unconfirmed.
+The completed CAD confirms three separate motors: two matching indexer motors
+drive the same shaft, and one motor pivots the intake. The software commands the
+indexer pair together because the indexer and intake rollers are mechanically linked.
 
-The owner subsequently clarified that there are **three separate motors**:
-one drives a **chain that pivots the intake**, and the other two both drive
-**the same indexer shaft**, now confirmed by the owner. The owner
-reports a **1:1 belt drive from the indexer to the intake rollers**, superseding
-the earlier 1.300 speed estimate for that connection. The two indexer motors need
-coordinated output and verified directions so they assist each other on the shared
-shaft. The intake rollers and indexer are mechanically linked and cannot be
-commanded as independently stoppable mechanisms under this reported arrangement.
-The CAN assignments are now established above, and the software commands the pair
-together. Equal motor-to-shaft ratios, motor directions, and any pivot gearbox
-reduction still need physical confirmation before applying the real configuration.
-
-| Interpreted belt path | Driving radius | Driven radius | Output speed / input speed |
+| Path | Driving teeth | Driven teeth | Input rotations per output rotation |
 | --- | --- | --- | --- |
-| Indexer-side shaft to intake roller (earlier measurements) | 0.815 in | 0.627 in | Superseded by owner's reported 1:1 ratio; measured surfaces/path need reconciliation |
-| Intake pivot chain stage (earlier radius measurements) | 0.376 in | 1.593 in | Approximately 0.236 if pitch radii (4.237:1 reduction); tooth counts needed |
-| Motor-side pulley to indexer | 0.376 in | 0.815 in | Approximately 0.461 (2.168:1 reduction) |
-| Second indexer motor to the shared indexer shaft | 0.376 in | 0.815 in | Approximately 0.461 (2.168:1 reduction); pitch radii/tooth counts unverified |
+| Each indexer NEO to shared indexer shaft | 12T | 24T | 2:1 |
+| Shared indexer shaft to intake roller | 26T | 20T | 10/13, approximately 0.7692:1 |
+| Each indexer NEO to intake roller, combined | 12T then 26T | 24T then 20T | 20/13, approximately 1.5385:1 |
+| Pivot NEO first stage | 22T | 38T | 38/22, approximately 1.7273:1 |
+| Pivot second stage, with 12T on the 38T shaft | 12T | 54T pivot sprocket | 4.5:1 |
+| Pivot NEO to intake pivot, combined | 22T then 12T | 38T then 54T | 171/22, approximately 7.7727:1 |
 
-These estimates use driving radius divided by driven radius and exclude any
-motor gearbox reduction. Outside or inside pulley/belt or sprocket radii are not necessarily
-pitch radii; exact tooth counts are preferable. Do not multiply these stages
-together unless their shaft connections establish that they are in series.
-
-Confirm whether the pivot motor has a gearbox and reconcile the preliminary radius
-measurements with the confirmed mechanism layout.
-The inferred 4.237:1 pivot chain stage does not by itself establish the complete
-motor-to-intake ratio or reconcile the existing 20:1 conversion. No runtime ratio
-was changed from these preliminary measurements.
+The intake roller turns at `26/20`, or 130%, of indexer-shaft speed.
+The pivot chain length is intentionally omitted because it does not affect ratio.
+Motor directions still need physical verification so the indexer motors assist
+each other and positive pivot feedback lowers the intake.
 
 ## Units and configuration readiness
 
 Pivot feedback is **intake degrees**, calculated from raw motor rotations:
-`degrees = motor rotations × feedback sign × 360 / 20`. The currently configured
-ratio is 20:1, so one motor turn corresponds to 18 intake degrees; reconcile this
-with the newly reported pivot chain path before treating it as a verified total
-reduction. Zero is the verified
+`degrees = motor rotations × feedback sign × 360 / (171/22)`. The confirmed
+ratio is approximately 7.7727:1, so one motor turn corresponds to approximately
+46.3158 intake degrees. Zero is the verified
 upper frame-contact stop; positive degrees lower the intake. Confirmed total
 stowed-to-deployed travel is **160 degrees**, so the deployed target is 160.
 The real dashboard prefills `IntakeDegrees` and `Pivot/MaxDegrees` with 160;
@@ -133,20 +107,19 @@ configuration still requires disabled apply and the remaining hardware settings.
 position must be greater than zero, clear of the stop, and less than the
 lowered intake position.
 
-Shooter readings and targets are **motor RPM**, not wheel RPM. The two motors
+Shooter readings and targets are **motor RPM**; the confirmed 1:1 pulleys make
+that equal to flywheel RPM. The two motors
 have separate targets and tolerances. Each feedback sign is +1 or -1 so a
 positive displayed speed means the intended shooting direction. Verify the
 relationship among motor inversion, encoder sign and commanded direction on
 hardware before confirming directions. Intake rollers and indexer use bounded
-open-loop output, so their ratios need not be known yet.
+open-loop output; their confirmed ratios are documented above.
 
 For an unconfigured real robot, `Fuel/Config/PrimaryMotorRpm` and
-`Fuel/Config/SecondaryMotorRpm` now start at **2828.57 motor RPM**. This copies
-2026-Rebuilt's close-hub motor speed: its 30 wheel RPS preset times 60 times its
-22/14 motor-to-wheel ratio. The owner has now confirmed that 16th Note also uses
-14T motor pulleys driving 22T flywheel pulleys on both sides. The existing target
-therefore corresponds to 1800 flywheel RPM, but remains a provisional starting
-point, not a calibrated shot
+`Fuel/Config/SecondaryMotorRpm` now start at **1800 motor RPM**. This preserves
+2026-Rebuilt's provisional 30 wheel RPS close-hub starting speed. Because 16th
+Note has matching 24T motor and flywheel pulleys, the target is also 1800 flywheel
+RPM. It remains a provisional starting point, not a calibrated shot
 or a promise of equal wheel speed. Both targets can be tuned independently.
 Their checked-in starting values are `INITIAL_SHOOTER_PRIMARY_MOTOR_RPM` and
 `INITIAL_SHOOTER_SECONDARY_MOTOR_RPM` in `FuelConstants`. Current limits,
@@ -462,8 +435,9 @@ These tests do not prove the physical robot is commissioned.
 2. Establish the pivot reference. Check inversion/feedback sign with bounded jogs,
    re-reference after configuration changes, then measure deployed travel and a
    raised working position clear of the hard stop. Configure soft/profile limits.
-3. Check roller and indexer directions separately. Verify that stopped indexing
-   prevents unwanted feeding and that loaded fuel does not jam the stopped shooter.
+3. Check both indexer motors together and verify that they assist each other while
+   driving the linked intake roller in the collection direction. Verify that stopped
+   indexing prevents unwanted feeding and that loaded fuel does not jam the stopped shooter.
 4. Confirm shooter coupling/follower alignment. Test the pair, tune motor-RPM gains,
    targets and tolerances, then verify readiness under fuel load.
 5. Test pickup, intake release, spin-up, feed, shoot release, disable and recovery
@@ -650,7 +624,7 @@ The check includes the motor-RPM scaling, so increasing either launch speed or
 motor RPM cannot bypass the simulated height limit.
 
 **This does not enforce a nine-foot ceiling on the real robot.** The real
-2828.57 motor-RPM starting targets are not calibrated to ball exit speed. Measure
+1800 motor-RPM starting targets are not calibrated to ball exit speed. Measure
 release height, launch angle, peak height and successful shot distance on hardware,
 then build a verified distance-to-RPM table with margin below the height target.
 Air resistance, spin and shot variation are not modeled here. Automatic

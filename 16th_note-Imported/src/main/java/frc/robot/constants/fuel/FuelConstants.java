@@ -3,12 +3,11 @@ package frc.robot.constants.fuel;
 /** Pivot settings use intake degrees; shooter targets use motor RPM. */
 public final class FuelConstants {
   /**
-   * Provisional speed starting point from 2026-Rebuilt's close-hub preset: 30 wheel RPS * 60 *
-   * 22/14 motor rotations per wheel rotation. The owner confirmed 14T motor pulleys driving 22T
-   * flywheel pulleys on both sides of 16th Note. This is not a calibrated shot or a guarantee of
-   * equal ball exit speed. Tune each motor separately.
+   * Provisional speed starting point from 2026-Rebuilt's 30 wheel RPS close-hub preset. CAD
+   * confirms matching 24T motor and flywheel pulleys on both sides, so motor and flywheel RPM are
+   * equal. This is not a calibrated shot or a guarantee of equal ball exit speed.
    */
-  public static final double INITIAL_SHOOTER_PRIMARY_MOTOR_RPM = 30.0 * 60.0 * (22.0 / 14.0);
+  public static final double INITIAL_SHOOTER_PRIMARY_MOTOR_RPM = 30.0 * 60.0;
 
   public static final double INITIAL_SHOOTER_SECONDARY_MOTOR_RPM =
       INITIAL_SHOOTER_PRIMARY_MOTOR_RPM;

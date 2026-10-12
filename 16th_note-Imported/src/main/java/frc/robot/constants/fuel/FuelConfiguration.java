@@ -16,7 +16,9 @@ public record FuelConfiguration(
     Pivot pivot,
     Settings sequence,
     Auto auto) {
-  public static final double PIVOT_RATIO = 20.0;
+  /** Confirmed CAD reduction: 22T motor gear -> 38T, then 12T -> 54T pivot sprocket. */
+  public static final double PIVOT_RATIO = (38.0 / 22.0) * (54.0 / 12.0);
+
   public static final double DEGREES_PER_MOTOR_ROTATION = 360.0 / PIVOT_RATIO;
 
   public enum Role {
