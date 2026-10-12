@@ -51,18 +51,26 @@ active project's WPILib configuration before deploying.
 | --- | --- |
 | 1 | Left drivetrain |
 | 2 | Right drivetrain |
-| 3 | Shooter primary |
-| 4 | Intake pivot |
-| 5 | Intake rollers |
-| 6 | Shooter secondary |
-| 7 | Indexer |
+| 3 | Primary shooter |
+| 4 | Secondary shooter |
+| 5 | Primary indexer motor |
+| 6 | Secondary indexer motor on the same shaft |
+| 7 | Intake pivot |
 
 All five fuel mechanism motors are NEOs with SPARK MAX controllers. The pivot
-uses a 20:1 reduction, with zero at the upper stop and 160 degrees at deployment.
-Real mechanism settings still require commissioning; simulation examples do not
-configure or validate real outputs. The intake must be referenced each robot-program
-session. Autonomous defaults to **Do nothing**; backing and shooting preloads
-requires verified settings and a valid reference.
+uses the confirmed `(38/22) * (54/12) = 171/22`, approximately 7.7727:1,
+reduction, with zero at the upper stop and 160 degrees at deployment. Both
+shooters use matching 24T pulleys for a 1:1 motor-to-flywheel ratio. Each indexer
+NEO drives the shared indexer shaft through a 12T-to-24T stage; that shaft drives
+the intake roller through a 26T-to-20T stage. There is no separate intake-roller
+motor, and indexer motors 5 and 6 always run together.
+
+Real mechanism settings start deliberately unconfigured and still require
+commissioning; simulation examples do not configure or validate real outputs.
+Dashboard device settings are temporary until copied into `FuelConstants.REAL`.
+The intake must be referenced each robot-program session. Autonomous defaults to
+**Do nothing**; backing and shooting preloads require verified settings and a
+valid reference.
 
 Follow the [fuel commissioning guide](16th_note-Imported/docs/source/fuel-system.md)
 for configuration, dashboard commands, Test-mode checks, and the ordered hardware
@@ -70,15 +78,19 @@ checklist.
 
 ## Simulation and documentation
 
-Desktop simulation includes estimated drivetrain physics, 400 neutral-zone fuel,
-pickup, shooting, and a detailed robot model with animated intake. AdvantageScope
+Desktop simulation uses the confirmed 4:1 drive reduction, 3-inch wheels, and
+9.414-inch geometric track width. Mass, inertia, rolling diameter, and effective
+turning track width remain calibration estimates. It also includes 400 neutral-zone
+fuel, pickup, shooting, and a detailed robot model with animated intake. AdvantageScope
 visualizes the simulation; the robot program supplies the simulated behavior.
 Use the fuel guide's **Prepare pickup practice (disabled)** workflow to start.
 Optional trench shooting presets and height limits are simulation-only estimates.
 
 The intake's raised angle is editable in AdvantageScope **Tuning Mode** under
 **Tuning → Fuel → FeedDegrees**. Increase it to stop the intake lower. Valid edits
-apply while disabled and preserve an existing reference; see the
+apply live in simulation; real-hardware edits wait until disabled. Accepted
+feed/agitation angles persist without a redeploy and preserve an existing reference;
+see the
 [angle-tuning instructions](16th_note-Imported/docs/source/fuel-system.md#tune-how-far-the-intake-rises).
 
 - [Active project README](16th_note-Imported/README.md): drivetrain details and development commands.
