@@ -103,7 +103,8 @@ and can be retuned without redeploying.
 Autonomous defaults to **Do nothing**. Keep it selected until the REAL fuel
 configuration, intake reference, backing voltages, timings, and starting position
 have all been tested. See [Fuel commissioning](docs/source/fuel-system.md) for the
-full interlocks and handoff procedure.
+full interlocks and handoff procedure. Track remaining event work in the
+[Roboticon checklist](ROBOTICON_CHECKLIST.md).
 
 ## Tune intake height in AdvantageScope
 

@@ -94,6 +94,7 @@ see the
 [angle-tuning instructions](16th_note-Imported/docs/source/fuel-system.md#tune-how-far-the-intake-rises).
 
 - [Active project README](16th_note-Imported/README.md): drivetrain details and development commands.
+- [Roboticon checklist](16th_note-Imported/ROBOTICON_CHECKLIST.md): checkable commissioning and event-readiness tasks.
 - [Getting started](16th_note-Imported/docs/source/getting-started.md): setup and controller configuration.
 - [Fuel system and simulation](16th_note-Imported/docs/source/fuel-system.md): mechanism operation and practice setup.
 - [Detailed AdvantageScope asset](16th_note-Imported/sim/Robot_16thNoteDetailed/README.md): robot model installation.
