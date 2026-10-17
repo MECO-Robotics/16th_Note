@@ -128,6 +128,23 @@ class FuelWorldSimTest {
   }
 
   @Test
+  void routeResetStagesSixAtEachRequestedFieldLocation() {
+    var sim = new FuelWorldSim();
+    sim.resetRoute();
+    assertEquals(18, sim.groundCount());
+    for (var source :
+        new Translation2d[] {
+          FuelWorldSim.DEPOT_FUEL, FuelWorldSim.OUTPOST_FUEL, FuelWorldSim.ROUTE_NEUTRAL_FUEL
+        }) {
+      long nearby =
+          java.util.Arrays.stream(sim.groundPoses())
+              .filter(p -> p.getTranslation().toTranslation2d().getDistance(source) < .25)
+              .count();
+      assertEquals(6, nearby);
+    }
+  }
+
+  @Test
   void pickupUsesRobotHeadingAndSweepsBetweenUpdates() {
     var sim = new FuelWorldSim();
     var pose = new Pose2d(2, 1, Rotation2d.fromDegrees(90));

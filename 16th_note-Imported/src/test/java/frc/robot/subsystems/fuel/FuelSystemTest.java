@@ -80,10 +80,9 @@ class FuelSystemTest {
     scheduler.run();
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  void bothControllerLayoutsRunSequenceWithoutTakingDrivetrain(boolean xbox) {
-    var controls = new DriverControls(0, xbox);
+  @Test
+  void xboxControlsRunSequenceWithoutTakingDrivetrain() {
+    var controls = new DriverControls(0);
     var sim = new GenericHIDSim(0);
     sim.setAxisCount(6);
     sim.setButtonCount(14);
@@ -97,7 +96,7 @@ class FuelSystemTest {
     scheduler.schedule(driving);
     for (int i = 0; i < 4; i++) loop();
     assertEquals(FuelSequencer.State.IDLE, fuel.state());
-    sim.setRawButton(5, true); // LB and L1 share this button index; stick mappings differ.
+    sim.setRawButton(5, true); // Xbox LB.
     sim.notifyNewData();
     loop();
     loop();

@@ -1,12 +1,8 @@
 # Live NetworkTables simulation check
 
-Controller layout is detected from Driver Station joystick metadata. A harness
-sending PS4 axes should identify the device as a non-Xbox `Wireless Controller`.
-For unnamed simulation devices, `TankDriveConstants.CONTROLLER_LAYOUT` selects
-the fallback (Xbox by default); set it to `Layout.PS4` for unnamed PS4 harnesses.
-For Logitech inputs, use the name `Logitech Dual Action` with the Xbox flag false
-or select `Layout.LOGITECH_DUAL_ACTION` as the fallback.
-Set `AUTO_DETECT_CONTROLLER = false` to force that selection for any device.
+The robot supports the Xbox controller mapping only. Simulation harnesses send
+Xbox axes and buttons: left Y on axis 1, RT on axis 3, right X on axis 4, LB on
+button 5, and RB on button 6.
 
 This check runs the actual robot program and uses a separate NT4 client to
 observe drivetrain outputs and simulated feedback. A HAL WebSocket connection
@@ -37,6 +33,20 @@ Wait for `Robot program startup complete`. In a second terminal:
 /tmp/16th-note-sim-check/bin/python scripts/check-sim-networktables.py
 ```
 
+To run the longer pickup-and-score exercise instead, restart or leave the
+disabled simulator running and use:
+
+```sh
+/tmp/16th-note-sim-check/bin/python scripts/check-sim-match-route.py
+```
+
+That checker invokes **Fuel/Sim/Prepare full-field route (disabled)**, then
+drives with Xbox joystick packets. It collects six staged fuel at each of the
+approximate blue depot, blue outpost, and neutral-zone locations, returns to the
+close blue-hub shot after each pickup, and requires all 18 fuel to score. Its
+upper-field route avoids the bump. Every sampled robot pose is checked against
+both blue bump footprints expanded by the conservative 0.32 m robot radius.
+
 The checker connects only to localhost: NT4 on port 5810 and HAL WebSockets
 on port 3300. Do not connect another Driver Station or simulator controller
 during this run. The checker controls modes and joysticks and disables the
@@ -59,8 +69,10 @@ normal build/simulation configuration. Do not enable this extension for replay.
 | `/AdvantageKit/TankDrive/HeadingRadians` | Simulated heading, positive counterclockwise |
 | `/AdvantageKit/TankDrive/HasPositionFeedback` | True for physics simulation |
 | `/AdvantageKit/DriverStation/Enabled` | Logged enabled state |
-| `/AdvantageKit/DriverStation/Joystick0/AxisValues` | Logged axes (left Y: 1; right X: Xbox 4, PS4 2) |
+| `/AdvantageKit/DriverStation/Joystick0/AxisValues` | Logged Xbox axes (left Y: 1; RT: 3; right X: 4) |
 | `/SmartDashboard/Auto Choices/options` | Stop-only autonomous option |
+| `/SmartDashboard/Fuel/Sim/PoseX`, `PoseY`, `HeadingDegrees` | Live route-check pose |
+| `/SmartDashboard/Fuel/Sim/HeldCount`, `LaunchedCount`, `ScoredCount` | Live route-check fuel totals |
 
 The checker publishes camera state below `/GamePieceVision/v1/left` and
 normalized requests below its `driveRequest` subtable. Each fresh frame
@@ -88,6 +100,12 @@ physics feedback, and the sign of wheel velocity when driving.
 Results are written to `build/sim-networktables-results.json`. A failed
 assertion produces a nonzero exit status. The zero-output checks allow the
 physics model to coast; they do not assert instant zero velocity.
+
+The full-field route writes `build/sim-match-route-results.json`, including the
+pickup pose for each source and every sampled route pose. The source positions,
+bump rectangles, ball flight, and hub opening are practice approximations. The
+route check proves command integration and simulated geometry; it does not
+claim official field-physics accuracy.
 
 This verifies the running Java robot, HAL mode/input handling, NetworkTables
 transport, vision request gates, output mixing, and simulated physics. It does

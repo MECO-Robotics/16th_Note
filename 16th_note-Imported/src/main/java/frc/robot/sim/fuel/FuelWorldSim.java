@@ -51,6 +51,11 @@ public final class FuelWorldSim {
   public static final double FUEL_MIN_Y = HUB_Y - 9.5 * FUEL_SPACING;
   public static final Pose2d PICKUP_START =
       new Pose2d(FUEL_MIN_X - .65, FUEL_MIN_Y, new Rotation2d());
+  public static final Translation2d DEPOT_FUEL = new Translation2d(.75, 6.95);
+  public static final Translation2d OUTPOST_FUEL = new Translation2d(.75, .75);
+  public static final Translation2d ROUTE_NEUTRAL_FUEL = new Translation2d(FIELD_CENTER_X, HUB_Y);
+  public static final Pose2d ROUTE_START =
+      new Pose2d(1.5, DEPOT_FUEL.getY(), Rotation2d.fromDegrees(180));
   public static final double PICKUP_RADIUS = .35;
   private Translation2d previousMouth;
   private final List<Translation3d> ground = new ArrayList<>();
@@ -76,6 +81,22 @@ public final class FuelWorldSim {
   }
 
   public void reset(int preloads) {
+    clear(preloads);
+    for (int i = 0; i < NEUTRAL_FUEL_COUNT; i++)
+      ground.add(
+          new Translation3d(
+              FUEL_MIN_X + (i % 20) * FUEL_SPACING, FUEL_MIN_Y + (i / 20) * FUEL_SPACING, RADIUS));
+  }
+
+  /** Stages six fuel at each location used by the live full-field route check. */
+  public void resetRoute() {
+    clear(0);
+    addCluster(DEPOT_FUEL);
+    addCluster(OUTPOST_FUEL);
+    addCluster(ROUTE_NEUTRAL_FUEL);
+  }
+
+  private void clear(int preloads) {
     ground.clear();
     shots.clear();
     held = Math.max(0, Math.min(6, preloads));
@@ -83,10 +104,14 @@ public final class FuelWorldSim {
     launched = 0;
     cooldown = 0;
     previousMouth = null;
-    for (int i = 0; i < NEUTRAL_FUEL_COUNT; i++)
-      ground.add(
-          new Translation3d(
-              FUEL_MIN_X + (i % 20) * FUEL_SPACING, FUEL_MIN_Y + (i / 20) * FUEL_SPACING, RADIUS));
+  }
+
+  private void addCluster(Translation2d center) {
+    for (int i = 0; i < 6; i++) {
+      double x = center.getX() + ((i % 3) - 1) * FUEL_SPACING;
+      double y = center.getY() + ((i / 3) - .5) * FUEL_SPACING;
+      ground.add(new Translation3d(x, y, RADIUS));
+    }
   }
   /** Used for deterministic exercises and tests; positions are field-relative meters. */
   public void addFuel(Translation2d position) {

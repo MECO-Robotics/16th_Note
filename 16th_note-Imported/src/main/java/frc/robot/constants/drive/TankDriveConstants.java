@@ -7,11 +7,6 @@ public final class TankDriveConstants {
   public static final boolean LEFT_INVERTED = false;
   public static final boolean RIGHT_INVERTED = true;
   public static final int DRIVER_CONTROLLER_PORT = 0;
-  public static final boolean AUTO_DETECT_CONTROLLER = true;
-  // Used for unnamed simulation devices or when AUTO_DETECT_CONTROLLER is false.
-  // Options: XBOX, PS4, LOGITECH_DUAL_ACTION.
-  public static final frc.robot.controls.DriverControls.Layout CONTROLLER_LAYOUT =
-      frc.robot.controls.DriverControls.Layout.XBOX;
   public static final double DEADBAND = 0.02;
   public static final double MAX_VOLTS = 12.0;
   // Owner-reported MAXPlanetary 4:1 gearbox, with 22T output driving 22T wheel sprockets.

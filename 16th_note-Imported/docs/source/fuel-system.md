@@ -225,20 +225,18 @@ output is not an active gravity hold; support the mechanism as necessary.
 
 ## Normal driver operation
 
-Xbox/PS4/Logitech Dual Action layout is detected automatically on USB 0. Check
-`Drive/ControllerLayout` in any mode, including disabled. To force a layout, set
-`TankDriveConstants.AUTO_DETECT_CONTROLLER = false` and
-`CONTROLLER_LAYOUT` to `Layout.XBOX`, `Layout.PS4`, or
-`Layout.LOGITECH_DUAL_ACTION`, then rebuild/deploy.
-Logitech button 5 is intake and button 6 is shoot; button 8 requests vision assist.
+Connect an Xbox controller on USB 0. The active mapping is Xbox only: LB runs
+intake, RB shoots, and RT requests vision assist. Check
+`Drive/ControllerLayout = Xbox` and `Drive/ControllerIsXbox = true` while
+disabled.
 Release both bumpers after enable/reconnection/interruption before operating.
 
 | Input | Behavior |
 | --- | --- |
-| LB / L1 | Lower intake; rollers run while held once deployed |
-| Release LB / L1 | Finish lowering, stay down, stop rollers |
-| RB / R1 | Spin both shooters; wait for stable readiness, then raise intake and run indexer |
-| Release RB / R1 | Stop shooter requests and indexer immediately; return intake fully down |
+| LB | Lower intake; rollers run while held once deployed |
+| Release LB | Finish lowering, stay down, stop rollers |
+| RB | Spin both shooters; wait for stable readiness, then raise intake and run indexer |
+| Release RB | Stop shooter requests and indexer immediately; return intake fully down |
 | Both bumpers | Shooting wins; intake rollers stay off |
 
 A drop in either shooter's speed immediately removes the indexer request and
@@ -490,6 +488,16 @@ Teleop, release bumpers, then use the existing drive/LB/RB controls. The six-pre
 neutral zone. This is a repeatable practice layout, not a claim of exact official
 match staging. Six preloads, when selected, are additional to the 400 ground fuel.
 Keep the pose unchanged to try the six-preload shot with the example settings.
+
+For an automated three-source exercise, disable the simulator and invoke
+**Fuel/Sim/Prepare full-field route (disabled)**. It stages six practice balls
+at approximate blue depot and outpost locations and six in the neutral zone,
+starts near the depot, and publishes `PoseX`, `PoseY`, `HeadingDegrees`, and
+`LaunchedCount` under `Fuel/Sim/`. Run `scripts/check-sim-match-route.py`
+through the temporary Python environment described in `simulation-check.md` to
+drive all three pickup/score cycles. The script uses the upper-field corridor
+and fails if the conservative robot circle enters either expanded blue bump
+footprint.
 
 For the existing autonomous example, the starting intake angle must still match
 `Fuel/Config/Auto/StartDegrees`. One simulated exercise starts at the upper stop:

@@ -25,10 +25,7 @@ public class RobotContainer {
           Constants.VisionPursuit.MAX_FORWARD_OUTPUT,
           Constants.VisionPursuit.MAX_TURN_OUTPUT);
   private final DriverControls driverController =
-      new DriverControls(
-          TankDriveConstants.DRIVER_CONTROLLER_PORT,
-          TankDriveConstants.AUTO_DETECT_CONTROLLER,
-          TankDriveConstants.CONTROLLER_LAYOUT);
+      new DriverControls(TankDriveConstants.DRIVER_CONTROLLER_PORT);
   private final GamePieceVisionClient vision =
       new GamePieceVisionClient(Constants.VisionPursuit.CAMERA_NAME);
   private final LoggedDashboardChooser<Command> autoChooser =

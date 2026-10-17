@@ -51,6 +51,9 @@ public final class FuelPracticeSimulation {
         "Fuel/Sim/Prepare pickup practice (disabled)",
         Commands.runOnce(() -> reset(0, FuelWorldSim.PICKUP_START, true), drive, fuel)
             .ignoringDisable(true));
+    SmartDashboard.putData(
+        "Fuel/Sim/Prepare full-field route (disabled)",
+        Commands.runOnce(this::prepareRoute, drive, fuel).ignoringDisable(true));
     reset(0, FuelWorldSim.START, false);
   }
 
@@ -92,6 +95,32 @@ public final class FuelPracticeSimulation {
         ready
             ? "400 neutral-zone fuel reset; simulated intake referenced; enable Teleop and release bumpers"
             : "400 neutral-zone fuel reset; reference intake before enabling");
+  }
+
+  private void prepareRoute() {
+    if (!DriverStation.isDisabled()) {
+      SmartDashboard.putString("Fuel/Sim/ResetStatus", "Rejected: disable simulation first");
+      return;
+    }
+    trenchShotActive = false;
+    SmartDashboard.putBoolean("Fuel/Sim/TrenchShotsEnabled", false);
+    if (!fuel.setSimulationShooterTarget(FuelShotPractice.CLOSE.motorRpm())) {
+      SmartDashboard.putString("Fuel/Sim/ResetStatus", "Rejected: could not apply SIM shot preset");
+      return;
+    }
+    SmartDashboard.putString("Fuel/Sim/ShotPreset", "CLOSE (SIM only; uncalibrated)");
+    SmartDashboard.putNumber("Fuel/Sim/LaunchSpeedMps", FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
+    SmartDashboard.putNumber("Fuel/Sim/PeakLimitFeet", 9);
+    drive.stop();
+    fuel.stop();
+    drive.resetSimulationPose(FuelWorldSim.ROUTE_START);
+    world.resetRoute();
+    boolean ready = fuel.confirmUpperReference();
+    SmartDashboard.putString(
+        "Fuel/Sim/ResetStatus",
+        ready
+            ? "18 route fuel reset: six each at depot, outpost, and neutral zone"
+            : "18 route fuel reset; reference intake before enabling");
   }
 
   public void periodic() {
@@ -145,6 +174,9 @@ public final class FuelPracticeSimulation {
     SmartDashboard.putBoolean("Fuel/Sim/PickupActive", fuel.collecting());
     SmartDashboard.putNumber("Fuel/Sim/NearestFuelMeters", world.nearestFuelDistance(pose));
     SmartDashboard.putNumber("Fuel/Sim/GroundCount", world.groundCount());
+    SmartDashboard.putNumber("Fuel/Sim/PoseX", pose.getX());
+    SmartDashboard.putNumber("Fuel/Sim/PoseY", pose.getY());
+    SmartDashboard.putNumber("Fuel/Sim/HeadingDegrees", pose.getRotation().getDegrees());
     Logger.recordOutput("Simulation/Fuel/PickupStatus", pickupStatus);
     Logger.recordOutput("Simulation/Fuel/GroundCount", world.groundCount());
     intake.setAngle(90 - fuel.pivotDegrees());
@@ -160,5 +192,6 @@ public final class FuelPracticeSimulation {
     Logger.recordOutput("Simulation/Fuel/LaunchedCount", world.launched());
     SmartDashboard.putNumber("Fuel/Sim/HeldCount", world.held());
     SmartDashboard.putNumber("Fuel/Sim/ScoredCount", world.scored());
+    SmartDashboard.putNumber("Fuel/Sim/LaunchedCount", world.launched());
   }
 }

@@ -73,8 +73,10 @@ def main():
         before = snapshot()
         deadline = time.monotonic() + 0.9
         while time.monotonic() < deadline:
-            send("Joystick", "0", {">axes": [0, -throttle, -steering, 0, 0, 0],
-                                   ">buttons": [False] * 7 + [trigger] + [False] * 6,
+            # The unnamed HAL joystick uses the configured Xbox fallback. Xbox
+            # right-X is axis 4 and right trigger is axis 3.
+            send("Joystick", "0", {">axes": [0, -throttle, 0, int(trigger), -steering, 0],
+                                   ">buttons": [False] * 14,
                                    ">povs": [-1]})
             if fresh:
                 sequence += 1

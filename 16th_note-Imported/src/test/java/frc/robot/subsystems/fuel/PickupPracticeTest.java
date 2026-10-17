@@ -15,13 +15,11 @@ import frc.robot.sim.fuel.FuelIOSim;
 import frc.robot.sim.fuel.FuelPracticeSimulation;
 import frc.robot.sim.tank.TankDriveIOSim;
 import frc.robot.subsystems.tank.TankDrive;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 
 class PickupPracticeTest {
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  void disabledPreparationThenBumperAndDrivingCollectSix(boolean xbox) {
+  @Test
+  void disabledPreparationThenBumperAndDrivingCollectSix() {
     assertTrue(HAL.initialize(500, 0));
     DriverStationSim.resetData();
     DriverStationSim.setDsAttached(true);
@@ -35,7 +33,7 @@ class PickupPracticeTest {
         new FuelSystem(io, FuelConfiguration.simulation(FuelConstants.SIMULATION), () -> now[0]);
     var drive = new TankDrive(new TankDriveIOSim());
     var practice = new FuelPracticeSimulation(drive, fuel);
-    var controls = new DriverControls(0, xbox);
+    var controls = new DriverControls(0);
     var joystick = new GenericHIDSim(0);
     joystick.setAxisCount(6);
     joystick.setButtonCount(14);

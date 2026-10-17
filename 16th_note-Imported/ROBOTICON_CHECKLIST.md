@@ -4,6 +4,9 @@ Check off each task by changing `[ ]` to `[x]`. Complete the sections in order.
 PhotonVision, AprilTag localization, distance-based shooting, and trench shooting
 are outside the Roboticon scope.
 
+Enter all measured hardware and tuning values in
+[COMMISSIONING_VALUES.md](COMMISSIONING_VALUES.md) for the final REAL configuration.
+
 ## 1. Electrical and controller setup
 
 - [ ] Program SPARK MAX CAN IDs 1–7.
