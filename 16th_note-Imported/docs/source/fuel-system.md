@@ -378,9 +378,10 @@ The real auto fields default unverified/unset:
 - `Auto/BackSeconds`, `Auto/SettleSeconds`, `Auto/FeedSeconds`, `Auto/TotalSeconds`.
 
 The sequence holds the starting intake pose while backing, stops the drivetrain,
-settles, spins up, then feeds when both motors are ready. Feeding duration begins
-when indexer output first becomes positive and continues through speed-recovery
-pauses. A separate overall timeout is limited to 15 s. Configuration/feedback
+settles, spins up, then feeds when both motors are ready. Feeding duration counts
+only while the indexer is feeding; speed-recovery pauses do not consume the preload
+feed time. `Fuel/Auto/FeedSeconds` reports the accumulated feeding time.
+A separate overall timeout is limited to 15 s. Configuration/feedback
 failure, missing reference, disable, cancellation or timeout stops both subsystems.
 See `Fuel/Auto/Stage` and `Fuel/Auto/Reason`.
 

@@ -24,7 +24,7 @@ public final class PreloadAutoCommand extends Command {
   private final DoubleSupplier clock;
   private Auto config;
   private Stage stage = Stage.ABORTED;
-  private double start, stageStart, feedStart;
+  private double start, stageStart, lastUpdate, feedSeconds;
   private String reason = "Not started";
 
   public PreloadAutoCommand(TankDrive drive, FuelSystem fuel) {
@@ -45,7 +45,8 @@ public final class PreloadAutoCommand extends Command {
     fuel.stop();
     start = clock.getAsDouble();
     stageStart = start;
-    feedStart = Double.NaN;
+    lastUpdate = start;
+    feedSeconds = 0;
     config = fuel.autonomousConfiguration();
     String blocked = fuel.autonomousBlockReason();
     if (!DriverStation.isAutonomousEnabled() || !Double.isFinite(start)) {
@@ -71,7 +72,7 @@ public final class PreloadAutoCommand extends Command {
       abort("Autonomous disabled/interrupted");
       return;
     }
-    if (!Double.isFinite(now) || now < start || now - start >= config.totalSeconds()) {
+    if (!Double.isFinite(now) || now < lastUpdate || now - start >= config.totalSeconds()) {
       abort("Overall autonomous timeout");
       return;
     }
@@ -80,6 +81,8 @@ public final class PreloadAutoCommand extends Command {
       abort(blocked);
       return;
     }
+    double elapsed = now - lastUpdate;
+    lastUpdate = now;
     switch (stage) {
       case BACKING -> {
         fuel.requestAutonomous(false);
@@ -100,8 +103,8 @@ public final class PreloadAutoCommand extends Command {
       case SHOOTING -> {
         drive.stop();
         fuel.requestAutonomous(true);
-        if (Double.isNaN(feedStart) && fuel.feeding()) feedStart = now;
-        if (!Double.isNaN(feedStart) && now - feedStart >= config.feedSeconds()) {
+        if (fuel.feeding()) feedSeconds += elapsed;
+        if (feedSeconds >= config.feedSeconds()) {
           stage = Stage.DONE;
           drive.stop();
           fuel.stop();
@@ -123,6 +126,7 @@ public final class PreloadAutoCommand extends Command {
   private void publish() {
     SmartDashboard.putString("Fuel/Auto/Stage", stage.name());
     SmartDashboard.putString("Fuel/Auto/Reason", reason);
+    SmartDashboard.putNumber("Fuel/Auto/FeedSeconds", feedSeconds);
   }
 
   @Override

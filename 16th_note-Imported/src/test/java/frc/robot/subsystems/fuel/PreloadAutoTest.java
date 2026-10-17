@@ -102,6 +102,35 @@ class PreloadAutoTest {
   }
 
   @Test
+  void simulatedDrivetrainMovesThenAutoReleasesAllSixPreloads() {
+    CommandScheduler.getInstance().unregisterSubsystem(drive);
+    drive = new TankDrive(new frc.robot.sim.tank.TankDriveIOSim());
+    drive.resetSimulationPose(frc.robot.sim.fuel.FuelShotPractice.CLOSE.pose());
+    var world = new frc.robot.sim.fuel.FuelWorldSim();
+    world.reset(6);
+    var initialPose = drive.simulatedPose();
+    command = new PreloadAutoCommand(drive, fuel, () -> now);
+    command.initialize();
+    for (int i = 0; i < 600 && !command.isFinished(); i++) {
+      loop();
+      drive.periodic();
+      world.update(
+          .02,
+          drive.simulatedPose(),
+          true,
+          false,
+          fuel.feeding(),
+          fuel.simulatedShooterRpm(),
+          frc.robot.sim.fuel.FuelWorldSim.DEFAULT_LAUNCH_SPEED_MPS);
+    }
+    assertEquals(Stage.DONE, command.stage(), command.reason());
+    assertTrue(
+        initialPose.getTranslation().getDistance(drive.simulatedPose().getTranslation()) > .05);
+    assertEquals(0, world.held(), "Auto should release all six simulated preloads");
+    assertFalse(fuel.feeding());
+  }
+
+  @Test
   void fullSimulationBacksStopsSettlesSpinsFeedsThenStops() {
     assertTrue(command.getRequirements().containsAll(java.util.Set.of(drive, fuel)));
     command.initialize();
@@ -191,7 +220,7 @@ class PreloadAutoTest {
   }
 
   @Test
-  void recoveryPausesCountTowardFeedDuration() {
+  void recoveryPausesDoNotConsumeFeedDuration() {
     command.initialize();
     until(Stage.SHOOTING);
     for (int i = 0; i < 200 && !fuel.feeding(); i++) loop();
@@ -199,9 +228,12 @@ class PreloadAutoTest {
     loop();
     double feedingAt = now;
     io.slow = true;
-    for (int i = 0; i < 200 && !command.isFinished(); i++) loop();
-    assertEquals(Stage.DONE, command.stage());
-    assertTrue(now - feedingAt < 2.1);
+    for (int i = 0; i < 30; i++) loop();
+    assertEquals(Stage.SHOOTING, command.stage());
+    assertFalse(fuel.feeding());
+    io.slow = false;
+    until(Stage.DONE);
+    assertTrue(now - feedingAt > 2.5);
     stopped();
   }
 
