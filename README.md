@@ -1,104 +1,35 @@
-# 16th Note — 2026 REBUILT
+# 16th Note — tank robot
 
-Tank-drive robot code with Xbox, PS4, and Logitech Dual Action controls, coordinated intake and shooter
-control, preload autonomous, and desktop fuel simulation.
+Team 9924. Uses the rebuilt command/subsystem/IO structure and AdvantageKit logging.
 
-**Open and deploy only [16th_note-Imported](16th_note-Imported/) in WPILib VS Code.**
-The sibling `16th_note/` folder is the original project archive.
+Xbox USB 0 controls:
 
-## Driver controls
-
-Assign the controller to **USB 0** in Driver Station. The code automatically
-selects the Xbox, PS4, or Logitech Dual Action layout; switching between them does not require rebuilding.
-
-| Action | Xbox | PS4 | Logitech Dual Action |
-| --- | --- | --- | --- |
-| Drive forward/backward | Left stick up/down | Left stick up/down | Left stick up/down |
-| Turn left/right | Right stick left/right | Right stick left/right | Right stick left/right |
-| Lower intake and run rollers once deployed | Hold LB | Hold L1 | Hold button 5 |
-| Stop rollers and leave intake down | Release LB | Release L1 | Release button 5 |
-| Spin up shooters, then raise intake and feed when ready | Hold RB | Hold R1 | Hold button 6 |
-| Stop shooter/indexer requests and return intake down | Release RB | Release R1 | Release button 6 |
-| Request existing vision assist | Hold RT past halfway | Hold R2 | Hold button 8 |
-
-Shooting takes priority when both bumpers are held. Release both bumpers after
-an enable, reconnection, or interruption before operating the fuel mechanisms.
-Manual stick input overrides vision assist. Driving stops on controller disconnect.
-Fuel operation requires valid configuration and an intake reference.
-
-If steering does not respond, check `Drive/ControllerLayout` and
-`Drive/ControllerConnected` on the dashboard, even while disabled. For the standard Logitech mapping,
-`Drive/RawAxis2` should change when moving the right stick sideways. See the
-[controller troubleshooting instructions](16th_note-Imported/README.md#controller-troubleshooting)
-for axis diagnostics and a manual layout override.
-
-## Build and run
-
-Use WPILib 2026 and its bundled JDK. Run commands from `16th_note-Imported/`.
-
-| Task | macOS / Linux | Windows PowerShell |
-| --- | --- | --- |
-| Build and test | `./gradlew build` | `.\gradlew.bat build` |
-| Desktop simulation | `./gradlew simulateJava` | `.\gradlew.bat simulateJava` |
-| Deploy to the robot | `./gradlew deploy` | `.\gradlew.bat deploy` |
-
-Build/deploy also work through WPILib VS Code. Verify the team number in the
-active project's WPILib configuration before deploying.
-
-## Hardware and commissioning
-
-| CAN ID | Mechanism |
+| Control | Action |
 | --- | --- |
-| 1 | Left drivetrain |
-| 2 | Right drivetrain |
-| 3 | Primary shooter |
-| 4 | Secondary shooter |
-| 5 | Primary indexer motor |
-| 6 | Secondary indexer motor on the same shaft |
-| 7 | Intake pivot |
+| Left Y / right X | Arcade drive / turn |
+| RT / LT | Intake forward / reverse, proportional up to 6 V |
+| RB / LB | Indexer forward / reverse at 6 V |
+| A / X | Shooter PID at 50% / 75% geared free speed (about 2401 / 3602 wheel RPM) |
+| B | Shooter 0 V |
+| POV Down / Up | Pivot stow +0.25 rotations (+90 degrees) / deploy -1/6 rotations (-60 degrees) |
+| POV Right | Pivot +1/24 rotations (+15 degrees), tunable intermediate preset |
 
-All five fuel mechanism motors are NEOs with SPARK MAX controllers. The pivot
-uses the confirmed `(38/22) * (54/12) = 171/22`, approximately 7.7727:1,
-reduction, with zero at the upper stop and 160 degrees at deployment. Both
-shooters use matching 24T pulleys for a 1:1 motor-to-flywheel ratio. Each indexer
-NEO drives the shared indexer shaft through a 12T-to-24T stage; that shaft drives
-the intake roller through a 26T-to-20T stage. There is no separate intake-roller
-motor, and indexer motors 5 and 6 always run together.
+Shooter and pivot presets remain active after button release. Roller controls stop on release; opposing controls cancel. Disable stops all mechanisms. Autonomous offers **Do nothing**.
 
-Real mechanism settings start deliberately unconfigured and still require
-commissioning; simulation examples do not configure or validate real outputs.
-Dashboard device settings are temporary until copied into `FuelConstants.REAL`.
-The intake must be referenced each robot-program session. Autonomous defaults to
-**Do nothing**; backing and shooting preloads require verified settings and a
-valid reference.
+SPARK MAX wiring: drive CAN 1/2, indexer 3, pivot 5, intake 6, shooter 7. CAN 4 is unused; vision is disabled.
 
-Follow the [fuel commissioning guide](16th_note-Imported/docs/source/fuel-system.md)
-for configuration, dashboard commands, Test-mode checks, and the ordered hardware
-checklist.
+Gear ratios in `MechanismConstants` use motor rotations per mechanism rotation: shooter 26:22, pivot 171:22. Drive reduction is 4:1 in `TankDriveConstants`. Separate intake/indexer reductions remain unmeasured; their telemetry uses motor rotations/RPM.
 
-## Simulation and documentation
+Tune P/I/D and feedforward under `/TunableNumbers/Shooter/Gains` and `/TunableNumbers/Pivot/Gains`. Both use the rebuilt project's `LoggedTunableNumber` and `ifChanged` gain-update pattern. Real closed-loop control uses SPARK MAX onboard PID/MAXMotion; gains are not the former software voltage PID gains. Shooter control/telemetry and gains use rotations/second (RPS), matching the rebuilt IO. Shooter A/X presets are `/TunableNumbers/Shooter/Presets/A_Rps` and `X_Rps`. Pivot P starts at `10/12` in controller output units per rotation. These are preliminary settings, not hardware tuning. Pivot output is capped at 25% duty (3 V at 12 V).
 
-Desktop simulation uses the confirmed 4:1 drive reduction, 3-inch wheels, and
-9.414-inch geometric track width. Mass, inertia, rolling diameter, and effective
-turning track width remain calibration estimates. It also includes 400 neutral-zone
-fuel, pickup, shooting, and a detailed robot model with animated intake. AdvantageScope
-visualizes the simulation; the robot program supplies the simulated behavior.
-Use the fuel guide's **Prepare pickup practice (disabled)** workflow to start.
-Optional trench shooting presets and height limits are simulation-only estimates.
+Pivot angle zero is horizontal. `/TunableNumbers/Pivot/Gains/kG` is the cosine gravity compensation voltage: zero contribution at +90 degrees, maximum at 0 degrees. Positive compensation commands increasing angle toward the stowed position. The pivot motor inversion is false (reversed from its previous true configuration). `kG` starts at 0 until hardware tuning. `HorizontalRotations` is no longer used. The pivot simulation does not model physical gravity.
 
-The intake's raised angle is editable in AdvantageScope **Tuning Mode** under
-**Tuning → Fuel → FeedDegrees**. Increase it to stop the intake lower. Valid edits
-apply live in simulation; real-hardware edits wait until disabled. Accepted
-feed/agitation angles persist without a redeploy and preserve an existing reference;
-see the
-[angle-tuning instructions](16th_note-Imported/docs/source/fuel-system.md#tune-how-far-the-intake-rises).
+At robot-program startup the relative encoder is seeded to home (+90 degrees). This assumes the intake is physically at home whenever the program starts; it cannot detect movement while unpowered. Disable stops outputs rather than driving home. Reference status is diagnostic only: a controller reset does not latch a motion block. If the relative encoder loses its physical angle, place the intake at home while disabled and use the optional **Pivot/Reference home (disabled)** command. Disabled/disconnected and invalid-gain protection still apply.
 
-- [Active project README](16th_note-Imported/README.md): drivetrain details and development commands.
-- [Roboticon checklist](16th_note-Imported/ROBOTICON_CHECKLIST.md): checkable commissioning and event-readiness tasks.
-- [Getting started](16th_note-Imported/docs/source/getting-started.md): setup and controller configuration.
-- [Fuel system and simulation](16th_note-Imported/docs/source/fuel-system.md): mechanism operation and practice setup.
-- [Detailed AdvantageScope asset](16th_note-Imported/sim/Robot_16thNoteDetailed/README.md): robot model installation.
-- [Live simulation checks](16th_note-Imported/docs/source/simulation-check.md): automated simulator exercise.
+Pivot presets are `/TunableNumbers/Pivot/Presets/{StowRotations,IntermediateRotations,DeployedRotations}`. All positions are absolute mechanism rotations; allowed travel is 150 degrees, from -60 to +90 degrees (-1/6 to +1/4 rotations).
 
-Software tests cover all three controller layouts and fuel behavior. Motor directions,
-mechanical travel, feeding, and shot calibration still need hardware verification.
+Rebuilt alignment: `FlywheelIO.fromSparkMax(name, hardware)` and the configured `PositionJointIO` factory select real/simulation/replay; `RobotContainer` wires hardware records from `constants/subsystems`. Presets use the base `holdVelocity`/`holdPosition` command pattern. The implementations are single-motor adaptations: tank drive, startup home seeding, conservative output caps, and additional disable/reference checks are specific to this robot. The desktop plant is an estimate, not a full copy of the rebuilt simulation.
+
+Simulation checks: `scripts/check-sim-networktables.py` and `scripts/check-sim-mechanisms.py`, with the simulator started using `-PntCheck`.
+
+Use WPILib 2026 and Java 17. Run `./gradlew.bat build`, `./gradlew.bat simulateJava`, or `./gradlew.bat deploy`.
