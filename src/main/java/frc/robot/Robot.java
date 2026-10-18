@@ -8,9 +8,11 @@
 package frc.robot;
 
 import com.revrobotics.util.StatusLogger;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.Constants;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -49,9 +51,13 @@ public class Robot extends LoggedRobot {
     // Set up data receivers & replay source
     switch (Constants.currentMode) {
       case REAL:
-        // Running on a real robot, log to a USB stick ("/U/logs")
-        if (Files.isDirectory(Path.of("/U"))) {
-          Logger.addDataReceiver(new WPILOGWriter());
+        Path logDirectory = selectLogDirectory();
+        if (logDirectory != null) {
+          Logger.addDataReceiver(new WPILOGWriter(logDirectory.toString()));
+          Logger.recordMetadata("LogDirectory", logDirectory.toString());
+          Logger.recordOutput("Logging/Directory", logDirectory.toString());
+        } else {
+          Logger.recordOutput("Logging/Directory", "Unavailable");
         }
         Logger.addDataReceiver(new NT4Publisher());
         break;
@@ -80,6 +86,38 @@ public class Robot extends LoggedRobot {
     // Instantiate our RobotContainer. This will perform all our button bindings,
     // and put our autonomous chooser on the dashboard.
     robotContainer = new RobotContainer();
+  }
+
+  /** Select storage once at startup; a missing or unwritable USB falls back to the RIO. */
+  private static Path selectLogDirectory() {
+    Path usb = Path.of("/U");
+    try {
+      // Do not mistake an unmounted /U directory for external storage.
+      if (Files.isDirectory(usb)
+          && !Files.getFileStore(usb).equals(Files.getFileStore(Path.of("/")))) {
+        return prepareLogDirectory(usb.resolve("logs"));
+      }
+    } catch (IOException | SecurityException exception) {
+      DriverStation.reportWarning("USB logging unavailable: " + exception.getMessage(), false);
+    }
+    try {
+      Path onboard = prepareLogDirectory(Path.of("/home/lvuser/logs"));
+      System.out.println("[Logging] USB unavailable; recording to " + onboard);
+      return onboard;
+    } catch (IOException | SecurityException exception) {
+      DriverStation.reportError(
+          "File logging unavailable on USB and onboard storage: " + exception.getMessage(), false);
+      return null;
+    }
+  }
+
+  private static Path prepareLogDirectory(Path directory) throws IOException {
+    Files.createDirectories(directory);
+    // Check actual write access before handing the directory to the asynchronous writer.
+    Path probe = Files.createTempFile(directory, ".write-check-", ".tmp");
+    Files.delete(probe);
+    System.out.println("[Logging] Recording to " + directory);
+    return directory;
   }
 
   /** This function is called periodically during all modes. */
