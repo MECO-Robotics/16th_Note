@@ -3,17 +3,16 @@ package frc.robot.subsystems.tank;
 import static org.junit.jupiter.api.Assertions.*;
 
 import edu.wpi.first.math.geometry.*;
-import frc.robot.sim.fuel.FuelWorldSim;
 import frc.robot.sim.tank.PracticeField;
 import org.junit.jupiter.api.Test;
 
 class PracticeFieldTest {
   @Test
   void sweepCannotTunnelThroughEitherHub() {
-    for (double x : new double[] {FuelWorldSim.HUB_X, FuelWorldSim.RED_HUB_X}) {
-      var start = new Pose2d(x - 2, FuelWorldSim.HUB_Y, new Rotation2d());
+    for (double x : new double[] {PracticeField.HUB_X, PracticeField.RED_HUB_X}) {
+      var start = new Pose2d(x - 2, PracticeField.HUB_Y, new Rotation2d());
       var result =
-          PracticeField.constrain(start, new Pose2d(x + 2, FuelWorldSim.HUB_Y, new Rotation2d()));
+          PracticeField.constrain(start, new Pose2d(x + 2, PracticeField.HUB_Y, new Rotation2d()));
       assertTrue(result.getX() <= x - .92);
       assertFalse(PracticeField.blocked(result.getX(), result.getY()));
     }

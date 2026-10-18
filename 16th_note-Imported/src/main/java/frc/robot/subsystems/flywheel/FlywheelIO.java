@@ -4,70 +4,41 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import frc.robot.constants.Constants;
 import frc.robot.constants.types.FlywheelConstants.FlywheelGains;
 import frc.robot.constants.types.FlywheelConstants.FlywheelHardwareConfig;
-import frc.robot.sim.flywheel.FlywheelIOSimSparkMax;
-import frc.robot.sim.flywheel.FlywheelIOSimTalonFX;
-import frc.robot.sim.replay.flywheel.FlywheelIOReplay;
-import java.util.function.Supplier;
 import org.littletonrobotics.junction.AutoLog;
 
+/** Rebuilt flywheel contract: mechanism rotations and rotations/second. */
 public interface FlywheelIO {
   @AutoLog
-  public static class FlywheelIOInputs {
-    public double velocity = 0.0;
-    public double desiredVelocity = 0.0;
-
-    public double position = 0.0;
-
-    public boolean[] motorsConnected = {false};
-
-    public double[] motorPositions = {0.0};
-    public double[] motorVelocities = {0.0};
-    public double[] motorAccelerations = {0.0};
-
-    public double[] motorVoltages = {0.0};
-    public double[] motorCurrents = {0.0};
+  class FlywheelIOInputs {
+    public double velocity;
+    public double position;
+    public double desiredVelocity;
+    public double appliedVolts;
+    public double currentAmps;
+    public boolean connected;
   }
 
-  public default void updateInputs(FlywheelIOInputs inputs) {}
-
-  public default void setVelocity(double velocity) {}
-
-  public default void setVoltage(double voltage) {}
-
-  public default void setGains(FlywheelGains gains) {}
-
-  public static Supplier<FlywheelIO> replayFactory(String name) {
-    return () -> new FlywheelIOReplay(name);
-  }
-
-  public static FlywheelIO fromMode(
-      String name,
-      FlywheelHardwareConfig config,
-      Supplier<FlywheelIO> subsystemSupplier,
-      DCMotor simMotorModel) {
-    return switch (Constants.currentMode) {
-      case REAL -> subsystemSupplier.get();
-      case SIM -> replayFactory(name).get();
-      default -> replayFactory(name).get();
-    };
-  }
-
-  public static FlywheelIO fromSparkMax(String name, FlywheelHardwareConfig config) {
+  static FlywheelIO fromSparkMax(String name, FlywheelHardwareConfig config) {
+    if (config.canIds().length != 1 || config.reversed().length != 1)
+      throw new IllegalArgumentException("This robot supports single-motor flywheels");
     return switch (Constants.currentMode) {
       case REAL -> new FlywheelIOSparkMax(name, config);
-      case SIM -> new FlywheelIOSimSparkMax(name, config, DCMotor.getNEO(config.canIds().length));
-      default -> replayFactory(name).get();
+      case SIM -> new FlywheelIOSimSparkMax(name, config, DCMotor.getNEO(1));
+      case REPLAY -> new FlywheelIO() {
+        public String getName() {
+          return name;
+        }
+      };
     };
   }
 
-  public static FlywheelIO fromTalonFX(String name, FlywheelHardwareConfig config) {
-    return switch (Constants.currentMode) {
-      case REAL -> new FlywheelIOTalonFX(name, config);
-      case SIM -> new FlywheelIOSimTalonFX(
-          name, config, DCMotor.getKrakenX60Foc(config.canIds().length));
-      default -> replayFactory(name).get();
-    };
-  }
+  default void updateInputs(FlywheelIOInputs inputs) {}
 
-  public String getName();
+  default void setGains(FlywheelGains gains) {}
+
+  default void setVelocity(double velocity) {}
+
+  default void setVoltage(double volts) {}
+
+  String getName();
 }

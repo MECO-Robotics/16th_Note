@@ -29,7 +29,7 @@ public final class TankDriveIOSparkMax extends MotorSafety implements TankDriveI
 
   private static boolean configure(SparkMax motor, boolean inverted) {
     var config = new SparkMaxConfig();
-    config.inverted(inverted).disableFollowerMode();
+    config.inverted(inverted).disableFollowerMode().smartCurrentLimit(60);
     for (int attempt = 0; attempt < 5; attempt++) {
       if (motor.configure(
               config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters)

@@ -4,16 +4,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.controls.DriverControls;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.sim.tank.TankDriveIOSim;
-import frc.robot.vision.TankVisionDriveAdapter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mecorobotics.gamepiecevision.GamePieceVisionClient.DriveRequest;
 
 class TankDriveTest {
   private FakeIO io;
@@ -75,10 +72,9 @@ class TankDriveTest {
     controllerSim.setButtonCount(14);
     controllerSim.setName("Xbox Controller");
     DriverStationSim.setJoystickIsXbox(0, true);
-    try (var vision = new org.mecorobotics.gamepiecevision.GamePieceVisionClient("teleop-test")) {
+    {
       var command =
-          new frc.robot.commands.drive.TankTeleopCommand(
-              drive, new frc.robot.controls.DriverControls(0), vision);
+          new frc.robot.commands.drive.TankTeleopCommand(drive, new CommandXboxController(0));
       assertTrue(command.getRequirements().contains(drive));
       controllerSim.setRawAxis(1, -1);
       controllerSim.notifyNewData();
@@ -135,63 +131,23 @@ class TankDriveTest {
 
   @Test
   void xboxActionMappings() {
-    var controls = new DriverControls(0);
     var sim = new edu.wpi.first.wpilibj.simulation.GenericHIDSim(0);
     sim.setAxisCount(6);
     sim.setButtonCount(14);
     sim.notifyNewData();
-    assertFalse(controls.isIntakeRequested());
-    assertFalse(controls.isShootRequested());
-    assertFalse(controls.isVisionAssistRequested());
     sim.setRawButton(5, true);
     sim.notifyNewData();
-    assertTrue(controls.isIntakeRequested());
-    assertFalse(controls.isShootRequested());
+    var controls = new CommandXboxController(0);
+    assertTrue(controls.leftBumper().getAsBoolean());
+    assertFalse(controls.rightBumper().getAsBoolean());
     sim.setRawButton(5, false);
     sim.setRawButton(6, true);
     sim.notifyNewData();
-    assertFalse(controls.isIntakeRequested());
-    assertTrue(controls.isShootRequested());
-    sim.setRawAxis(3, 0.5);
-    sim.notifyNewData();
-    assertFalse(controls.isVisionAssistRequested());
-    sim.setRawAxis(3, 0.6);
-    sim.notifyNewData();
-    assertTrue(controls.isVisionAssistRequested());
-    sim.setRawAxis(3, 0);
+    assertFalse(controls.leftBumper().getAsBoolean());
+    assertTrue(controls.rightBumper().getAsBoolean());
     sim.setRawButton(6, false);
     sim.notifyNewData();
-    assertFalse(controls.isVisionAssistRequested());
-    assertFalse(controls.isShootRequested());
-  }
-
-  @Test
-  void xboxDiagnosticsRemainAvailableWhileDisabled() {
-    var sim = new edu.wpi.first.wpilibj.simulation.GenericHIDSim(0);
-    sim.setAxisCount(6);
-    sim.setButtonCount(14);
-    sim.setName("Xbox Controller");
-    DriverStationSim.setJoystickIsXbox(0, true);
-    sim.setRawAxis(1, -.75);
-    sim.setRawAxis(4, .6);
-    DriverStationSim.setEnabled(false);
-    sim.notifyNewData();
-    var controls = new DriverControls(0);
-    assertEquals(.6, controls.getRightX(), 1e-6);
-    controls.publishDiagnostics();
-    assertEquals("Xbox", SmartDashboard.getString("Drive/ControllerLayout", ""));
-    assertEquals(6, SmartDashboard.getNumber("Drive/ControllerAxisCount", -1));
-    assertEquals(.6, SmartDashboard.getNumber("Drive/RawAxis4", 0), 1e-6);
-    assertEquals(0, io.left);
-    assertEquals(0, io.right);
-
-    sim.setAxisCount(0);
-    sim.setButtonCount(0);
-    sim.setPOVCount(0);
-    sim.notifyNewData();
-    controls.publishDiagnostics();
-    assertFalse(SmartDashboard.getBoolean("Drive/ControllerConnected", true));
-    assertEquals(0, SmartDashboard.getNumber("Drive/RawAxis4", -1));
+    assertFalse(controls.rightBumper().getAsBoolean());
   }
 
   @Test
@@ -242,27 +198,6 @@ class TankDriveTest {
   }
 
   @Test
-  void visionIsLimitedAndGoalOrInactiveRequestsStop() {
-    var adapter = new TankVisionDriveAdapter(drive, 0.35, 0.35);
-    adapter.apply(new DriveRequest(true, false, 1, 0, 0, 1));
-    assertEquals(4.2, io.left, 1e-9);
-    assertEquals(4.2, io.right, 1e-9);
-    adapter.apply(new DriveRequest(true, true, 1, 0, 0, 2));
-    assertEquals(0, io.left);
-    assertEquals(0, io.right);
-    adapter.apply(DriveRequest.inactive());
-    assertEquals(0, io.left);
-  }
-
-  @Test
-  void positiveVisionTurnIsCounterclockwise() {
-    var adapter = new TankVisionDriveAdapter(drive, 0.35, 0.35);
-    adapter.apply(new DriveRequest(true, false, 0, 0, 0.5, 1));
-    assertEquals(-2.1, io.left, 1e-9);
-    assertEquals(2.1, io.right, 1e-9);
-  }
-
-  @Test
   void simulationPoseResetClearsVelocityAndPreservesHeading() {
     var sim = new TankDriveIOSim();
     var inputs = new TankDriveIO.TankDriveIOInputs();
@@ -289,8 +224,8 @@ class TankDriveTest {
     sim.setVoltage(12, 12);
     for (int i = 0; i < 200; i++) sim.updateInputs(inputs);
     double stoppedX = inputs.simulatedPose.getX();
-    assertTrue(stoppedX <= frc.robot.sim.fuel.FuelWorldSim.HUB_X - .92);
-    assertTrue(stoppedX > frc.robot.sim.fuel.FuelWorldSim.START.getX());
+    assertTrue(stoppedX <= frc.robot.sim.tank.PracticeField.HUB_X - .92);
+    assertTrue(stoppedX > frc.robot.sim.tank.PracticeField.START.getX());
     sim.setVoltage(-6, -6);
     for (int i = 0; i < 30; i++) sim.updateInputs(inputs);
     assertTrue(inputs.simulatedPose.getX() < stoppedX - .1);

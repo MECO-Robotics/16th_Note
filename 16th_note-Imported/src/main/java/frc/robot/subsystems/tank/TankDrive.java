@@ -69,12 +69,12 @@ public final class TankDrive extends SubsystemBase {
     double rightVolts =
         MathUtil.clamp(right, -TankDriveConstants.MAX_VOLTS, TankDriveConstants.MAX_VOLTS);
     io.setVoltage(leftVolts, rightVolts);
-    Logger.recordOutput("TankDrive/RequestedVolts", new double[] {leftVolts, rightVolts});
+    Logger.recordOutput("TankDrive/CommandedVolts", new double[] {leftVolts, rightVolts});
   }
 
   public void stop() {
     io.stop();
-    Logger.recordOutput("TankDrive/RequestedVolts", new double[] {0.0, 0.0});
+    Logger.recordOutput("TankDrive/CommandedVolts", new double[] {0.0, 0.0});
   }
 
   private static double sanitize(double value) {
