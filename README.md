@@ -20,7 +20,15 @@ Xbox USB 0 controls:
 | POV Down / Up | Pivot stow +0.25 rotations (+90 degrees) / deploy -1/6 rotations (-60 degrees) |
 | POV Right | Pivot +1/24 rotations (+15 degrees), tunable intermediate preset |
 
-Shooter and pivot presets remain active after button release. Roller controls stop on release; opposing controls cancel. Disable stops all mechanisms. Autonomous offers **Do nothing**.
+Shooter and pivot presets remain active after button release. Roller controls stop on release; opposing controls cancel. Disable stops all mechanisms.
+
+Autonomous routines are loaded from `src/main/deploy/pathplanner/autos` through PathPlanner's `AutoBuilder` chooser. The tank drivetrain follows PathPlanner paths with its integrated NEO encoders and calculated differential-drive heading. Available named commands are `DeployIntake`, `RaiseIntakeToFeed`, `StowIntake`, `SpinIntake`, `StopIntake`, `SpinUpShooter`, `AutoSpinUp`, `StopShooter`, `FeedIndexer`, `FeedRollers`, `StopIndexer`, `IdleRollers`, `Agitate`, `Shoot`, `ShootFullSpeed`, and `StopAll`; enter these exact names in PathPlanner named-command blocks. Driving and turning belong in PathPlanner path blocks. **Back Up and Shoot** resets odometry and follows **Back up and Shoot**. **Left trench shoot** and **Right trench shoot** start at 0 degrees with the intake facing the field, follow their matching mirrored paths, then run `ShootFullSpeed`.
+
+`SpinIntake`, `SpinUpShooter`, and `FeedIndexer` keep running until interrupted, so use them inside a PathPlanner parallel deadline/race group or follow them with their matching stop command. `DeployIntake`, `RaiseIntakeToFeed`, `StowIntake`, and `Shoot` finish on their own.
+
+`ShootFullSpeed` holds the pivot at the agitation preset and commands `/TunableNumbers/Auto/Shoot/FullSpeed_Rps`, which defaults to 100% geared free speed. It waits for the measured flywheel speed to enter the configured shooter tolerance before feeding the indexer. If `/TunableNumbers/Auto/Shoot/ReadyTimeoutSeconds` expires first, it reports an error and does not feed. Feed duration and voltage remain tunable at `/TunableNumbers/Auto/Shoot/{FeedSeconds,IndexerVolts}`.
+
+Path following uses `/TunableNumbers/Drive/Auto/{kS,kV,kA,kP}`. The initial values are model estimates and must be checked with the robot safely raised before running on the field. PathPlanner robot mass, moment of inertia, footprint, and maximum speed are also preliminary; the known 3-inch wheel diameter, 4:1 reduction, and 9.414-inch track width are configured.
 
 SPARK MAX wiring: drive CAN 1/2, indexer 3, pivot 5, intake 6, shooter 7. CAN 4 is unused; vision is disabled.
 

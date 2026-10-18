@@ -24,10 +24,10 @@ public final class Motor extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs(getName(), inputs);
-    if (!DriverStation.isTeleopEnabled()
-        || !DriverStation.isJoystickConnected(0)
-        || !inputs.connected
-        || !Double.isFinite(targetVolts)) stop();
+    boolean enabledForControl =
+        DriverStation.isAutonomousEnabled()
+            || (DriverStation.isTeleopEnabled() && DriverStation.isJoystickConnected(0));
+    if (!enabledForControl || !inputs.connected || !Double.isFinite(targetVolts)) stop();
     io.setVoltage(MathUtil.clamp(targetVolts, -maxVolts, maxVolts));
     Logger.recordOutput(getName() + "/CommandedVolts", targetVolts);
   }

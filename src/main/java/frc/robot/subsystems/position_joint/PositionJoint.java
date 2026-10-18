@@ -118,8 +118,8 @@ public final class PositionJoint extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs(getName(), inputs);
     boolean allowed =
-        DriverStation.isTeleopEnabled()
-            && DriverStation.isJoystickConnected(0)
+        (DriverStation.isAutonomousEnabled()
+                || (DriverStation.isTeleopEnabled() && DriverStation.isJoystickConnected(0)))
             && inputs.connected
             && gainsValid
             && Double.isFinite(inputs.outputPosition)

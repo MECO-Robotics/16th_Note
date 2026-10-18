@@ -1,41 +1,127 @@
 package frc.robot.subsystems.tank;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPLTVController;
+import com.pathplanner.lib.util.DriveFeedforwards;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants;
 import frc.robot.constants.drive.TankDriveConstants;
+import frc.robot.util.mechanical_advantage.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 /** Command-owned differential drivetrain, independent of hardware and replay mode. */
 public final class TankDrive extends SubsystemBase {
   private final TankDriveIO io;
   private final TankDriveIOInputsAutoLogged inputs = new TankDriveIOInputsAutoLogged();
+  private final DifferentialDriveKinematics kinematics =
+      new DifferentialDriveKinematics(TankDriveConstants.SIM_TRACK_WIDTH_METERS);
+  private final DifferentialDriveOdometry odometry =
+      new DifferentialDriveOdometry(new Rotation2d(), 0.0, 0.0);
+  private final LoggedTunableNumber autoKS = new LoggedTunableNumber("Drive/Auto/kS", 0.2);
+  private final LoggedTunableNumber autoKV = new LoggedTunableNumber("Drive/Auto/kV", 2.15);
+  private final LoggedTunableNumber autoKA = new LoggedTunableNumber("Drive/Auto/kA", 0.25);
+  private final LoggedTunableNumber autoKP = new LoggedTunableNumber("Drive/Auto/kP", 2.0);
 
   public TankDrive(TankDriveIO io) {
     this.io = io;
+    configureAutoBuilder();
   }
 
   @Override
   public void periodic() {
-    if (DriverStation.isDisabled()) {
-      stop();
-    }
     io.updateInputs(inputs);
     Logger.processInputs("TankDrive", inputs);
-  }
-
-  public edu.wpi.first.math.geometry.Pose2d simulatedPose() {
-    return inputs.simulatedPose;
-  }
-
-  public void resetSimulationPose(edu.wpi.first.math.geometry.Pose2d pose) {
-    if (frc.robot.constants.Constants.currentMode == frc.robot.constants.Constants.Mode.SIM
-        && DriverStation.isDisabled()) {
-      stop();
-      io.resetSimulationPose(pose);
-      inputs.simulatedPose = pose;
+    if (inputs.hasPositionFeedback) {
+      odometry.update(
+          Rotation2d.fromRadians(inputs.headingRadians),
+          inputs.leftPositionMeters,
+          inputs.rightPositionMeters);
     }
+    if (DriverStation.isDisabled()) stop();
+    Logger.recordOutput("TankDrive/Pose", getPose());
+  }
+
+  private void configureAutoBuilder() {
+    if (AutoBuilder.isConfigured()) return;
+    try {
+      AutoBuilder.configure(
+          this::getPose,
+          this::resetPose,
+          this::getRobotRelativeSpeeds,
+          this::runPathVelocity,
+          new PPLTVController(0.02, 6.0),
+          RobotConfig.fromGUISettings(),
+          () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
+          this);
+    } catch (Exception exception) {
+      DriverStation.reportError(
+          "Failed to configure PathPlanner: " + exception.getMessage(), exception.getStackTrace());
+    }
+  }
+
+  public Pose2d getPose() {
+    return odometry.getPoseMeters();
+  }
+
+  public void resetPose(Pose2d pose) {
+    stop();
+    if (Constants.currentMode == Constants.Mode.SIM) {
+      io.resetSimulationPose(pose);
+      odometry.resetPosition(pose.getRotation(), 0.0, 0.0, pose);
+    } else {
+      odometry.resetPosition(
+          Rotation2d.fromRadians(inputs.headingRadians),
+          inputs.leftPositionMeters,
+          inputs.rightPositionMeters,
+          pose);
+    }
+  }
+
+  public ChassisSpeeds getRobotRelativeSpeeds() {
+    return kinematics.toChassisSpeeds(
+        new edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds(
+            inputs.leftVelocityMetersPerSecond, inputs.rightVelocityMetersPerSecond));
+  }
+
+  private void runPathVelocity(ChassisSpeeds speeds, DriveFeedforwards feedforwards) {
+    if (!inputs.hasPositionFeedback) {
+      stop();
+      return;
+    }
+    var targets = kinematics.toWheelSpeeds(speeds);
+    double[] accelerations = feedforwards.accelerationsMPSSq();
+    double leftAccel = accelerations.length > 0 ? accelerations[0] : 0.0;
+    double rightAccel = accelerations.length > 1 ? accelerations[1] : 0.0;
+    double leftVolts =
+        velocityVolts(targets.leftMetersPerSecond, inputs.leftVelocityMetersPerSecond, leftAccel);
+    double rightVolts =
+        velocityVolts(
+            targets.rightMetersPerSecond, inputs.rightVelocityMetersPerSecond, rightAccel);
+    setVoltage(leftVolts, rightVolts);
+    Logger.recordOutput(
+        "TankDrive/AutoTargetMetersPerSecond",
+        new double[] {targets.leftMetersPerSecond, targets.rightMetersPerSecond});
+  }
+
+  private double velocityVolts(double target, double measured, double acceleration) {
+    if (!Double.isFinite(target) || !Double.isFinite(measured) || !Double.isFinite(acceleration)) {
+      return 0.0;
+    }
+    double staticVolts = Math.abs(target) > 1e-4 ? Math.copySign(autoKS.get(), target) : 0.0;
+    return staticVolts
+        + autoKV.get() * target
+        + autoKA.get() * acceleration
+        + autoKP.get() * (target - measured);
   }
 
   public void tankDrive(double left, double right) {

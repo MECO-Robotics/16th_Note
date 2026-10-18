@@ -1,11 +1,14 @@
 package frc.robot;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.commands.auto.PreloadAutoCommands;
 import frc.robot.commands.drive.TankTeleopCommand;
 import frc.robot.constants.MechanismConstants;
 import frc.robot.constants.drive.TankDriveConstants;
@@ -51,21 +54,110 @@ public class RobotContainer {
       new LoggedTunableNumber("Shooter/Presets/A_Rps", ShooterConstants.FREE_SPEED_RPS * 0.5);
   private final LoggedTunableNumber shooterX =
       new LoggedTunableNumber("Shooter/Presets/X_Rps", ShooterConstants.FREE_SPEED_RPS * 0.75);
+  private final LoggedTunableNumber autoSpinupSeconds =
+      new LoggedTunableNumber("Auto/Shoot/SpinupSeconds", 1.5);
+  private final LoggedTunableNumber autoFullSpeedRps =
+      new LoggedTunableNumber("Auto/Shoot/FullSpeed_Rps", ShooterConstants.FREE_SPEED_RPS);
+  private final LoggedTunableNumber autoReadyTimeoutSeconds =
+      new LoggedTunableNumber("Auto/Shoot/ReadyTimeoutSeconds", 5.0);
+  private final LoggedTunableNumber autoFeedSeconds =
+      new LoggedTunableNumber("Auto/Shoot/FeedSeconds", 1.5);
+  private final LoggedTunableNumber autoIndexerVolts =
+      new LoggedTunableNumber("Auto/Shoot/IndexerVolts", 6.0);
+  private final LoggedTunableNumber autoIntakeVolts =
+      new LoggedTunableNumber("Auto/Intake/Volts", 6.0);
+  private final LoggedTunableNumber autoPivotTimeoutSeconds =
+      new LoggedTunableNumber("Auto/Pivot/TimeoutSeconds", 2.0);
   private final CommandXboxController driverController =
       new CommandXboxController(TankDriveConstants.DRIVER_CONTROLLER_PORT);
-  private final LoggedDashboardChooser<Command> autoChooser =
-      new LoggedDashboardChooser<>("Auto Choices");
+  private final LoggedDashboardChooser<Command> autoChooser;
 
   public void periodic() {
     autoChooser.periodic();
   }
 
   public RobotContainer() {
-    // The active drivetrain is tank and uses manual controller input only.
     drive.setDefaultCommand(new TankTeleopCommand(drive, driverController));
     configureButtonBindings();
-    autoChooser.addDefaultOption(
-        "Do nothing", Commands.run(this::stop, drive, shooter, pivot, intake, indexer));
+    registerNamedCommands();
+    autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
+  }
+
+  private void registerNamedCommands() {
+    NamedCommands.registerCommand(
+        "DeployIntake",
+        PreloadAutoCommands.moveIntake(
+            pivot, deployed::get, autoPivotTimeoutSeconds::get, "DeployIntake"));
+    NamedCommands.registerCommand(
+        "RaiseIntakeToFeed",
+        PreloadAutoCommands.moveIntake(
+            pivot, intermediate::get, autoPivotTimeoutSeconds::get, "RaiseIntakeToFeed"));
+    NamedCommands.registerCommand(
+        "StowIntake",
+        PreloadAutoCommands.moveIntake(
+            pivot, stow::get, autoPivotTimeoutSeconds::get, "StowIntake"));
+    NamedCommands.registerCommand(
+        "SpinIntake", intake.voltageCommand(autoIntakeVolts::get).withName("SpinIntake"));
+    NamedCommands.registerCommand(
+        "StopIntake", Commands.runOnce(intake::stop, intake).withName("StopIntake"));
+    NamedCommands.registerCommand(
+        "SpinUpShooter", Flywheel.holdVelocity(shooter, shooterA::get).withName("SpinUpShooter"));
+    NamedCommands.registerCommand(
+        "StopShooter", Commands.runOnce(shooter::stop, shooter).withName("StopShooter"));
+    NamedCommands.registerCommand(
+        "FeedIndexer", indexer.voltageCommand(autoIndexerVolts::get).withName("FeedIndexer"));
+    NamedCommands.registerCommand(
+        "FeedRollers", indexer.voltageCommand(autoIndexerVolts::get).withName("FeedRollers"));
+    NamedCommands.registerCommand(
+        "StopIndexer", Commands.runOnce(indexer::stop, indexer).withName("StopIndexer"));
+    NamedCommands.registerCommand(
+        "IdleRollers",
+        Commands.runOnce(
+                () -> {
+                  intake.stop();
+                  indexer.stop();
+                },
+                intake,
+                indexer)
+            .withName("IdleRollers"));
+    NamedCommands.registerCommand(
+        "Agitate", PositionJoint.holdPosition(pivot, intermediate::get).withName("Agitate"));
+    NamedCommands.registerCommand(
+        "AutoSpinUp",
+        Commands.run(() -> shooter.setVelocity(shooterA.get()), shooter)
+            .withTimeout(2.0)
+            .withName("AutoSpinUp"));
+    NamedCommands.registerCommand("Shoot", shootCommand());
+    NamedCommands.registerCommand("ShootFullSpeed", shootFullSpeedCommand());
+    NamedCommands.registerCommand(
+        "StopAll",
+        Commands.runOnce(this::stop, drive, shooter, pivot, intake, indexer).withName("StopAll"));
+  }
+
+  private Command shootCommand() {
+    return PreloadAutoCommands.shootPreloads(
+        shooter,
+        pivot,
+        indexer,
+        shooterA::get,
+        intermediate::get,
+        deployed::get,
+        autoSpinupSeconds::get,
+        autoFeedSeconds::get,
+        autoIndexerVolts::get,
+        autoPivotTimeoutSeconds::get);
+  }
+
+  private Command shootFullSpeedCommand() {
+    return PreloadAutoCommands.shootFullSpeedWhenReady(
+        shooter,
+        pivot,
+        indexer,
+        autoFullSpeedRps::get,
+        intermediate::get,
+        autoReadyTimeoutSeconds::get,
+        autoFeedSeconds::get,
+        autoIndexerVolts::get);
   }
 
   private void configureButtonBindings() {

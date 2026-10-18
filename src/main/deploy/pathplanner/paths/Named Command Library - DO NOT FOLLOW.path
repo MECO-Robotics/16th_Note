@@ -1,0 +1,151 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 0.55,
+        "y": 0.5
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 0.6,
+        "y": 0.5
+      },
+      "prevControl": {
+        "x": 0.55,
+        "y": 0.5
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "DeployIntake",
+      "waypointRelativePos": 0.05,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "RaiseIntakeToFeed",
+      "waypointRelativePos": 0.1,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "StowIntake",
+      "waypointRelativePos": 0.15,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "SpinIntake",
+      "waypointRelativePos": 0.2,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "StopIntake",
+      "waypointRelativePos": 0.25,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "SpinUpShooter",
+      "waypointRelativePos": 0.3,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "AutoSpinUp",
+      "waypointRelativePos": 0.35,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "StopShooter",
+      "waypointRelativePos": 0.4,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "FeedIndexer",
+      "waypointRelativePos": 0.45,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "FeedRollers",
+      "waypointRelativePos": 0.5,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "StopIndexer",
+      "waypointRelativePos": 0.55,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "IdleRollers",
+      "waypointRelativePos": 0.6,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Agitate",
+      "waypointRelativePos": 0.65,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Shoot",
+      "waypointRelativePos": 0.7,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "StopAll",
+      "waypointRelativePos": 0.75,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "ShootFullSpeed",
+      "waypointRelativePos": 0.8,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 0.1,
+    "maxAcceleration": 0.1,
+    "maxAngularVelocity": 30.0,
+    "maxAngularAcceleration": 30.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.0,
+    "rotation": 0.0
+  },
+  "reversed": false,
+  "folder": "Command Library",
+  "idealStartingState": {
+    "velocity": 0.0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": false
+}

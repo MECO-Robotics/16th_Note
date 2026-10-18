@@ -2,6 +2,7 @@ package frc.robot.subsystems.tank;
 
 import com.revrobotics.PersistMode;
 import com.revrobotics.REVLibError;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
@@ -14,14 +15,22 @@ import frc.robot.constants.drive.TankDriveConstants;
 public final class TankDriveIOSparkMax extends MotorSafety implements TankDriveIO {
   private final SparkMax left;
   private final SparkMax right;
+  private final RelativeEncoder leftEncoder;
+  private final RelativeEncoder rightEncoder;
   private final boolean configured;
 
   public TankDriveIOSparkMax(MotorType motorType) {
     left = new SparkMax(TankDriveConstants.LEFT_CAN_ID, motorType);
     right = new SparkMax(TankDriveConstants.RIGHT_CAN_ID, motorType);
+    leftEncoder = left.getEncoder();
+    rightEncoder = right.getEncoder();
     boolean leftReady = configure(left, TankDriveConstants.LEFT_INVERTED);
     boolean rightReady = configure(right, TankDriveConstants.RIGHT_INVERTED);
     configured = leftReady && rightReady;
+    if (configured) {
+      leftEncoder.setPosition(0.0);
+      rightEncoder.setPosition(0.0);
+    }
     stop();
     setExpiration(0.1);
     setSafetyEnabled(true);
@@ -46,8 +55,23 @@ public final class TankDriveIOSparkMax extends MotorSafety implements TankDriveI
   public void updateInputs(TankDriveIOInputs inputs) {
     inputs.leftAppliedVolts = left.getAppliedOutput() * left.getBusVoltage();
     inputs.rightAppliedVolts = right.getAppliedOutput() * right.getBusVoltage();
-    // Wheel distance and heading are not calibrated on this robot.
-    inputs.hasPositionFeedback = false;
+    double metersPerMotorRotation =
+        2.0
+            * Math.PI
+            * TankDriveConstants.SIM_WHEEL_RADIUS_METERS
+            / TankDriveConstants.SIM_GEAR_RATIO;
+    double leftSign = TankDriveConstants.LEFT_INVERTED ? -1.0 : 1.0;
+    double rightSign = TankDriveConstants.RIGHT_INVERTED ? -1.0 : 1.0;
+    inputs.hasPositionFeedback = configured;
+    inputs.leftPositionMeters = leftEncoder.getPosition() * metersPerMotorRotation * leftSign;
+    inputs.rightPositionMeters = rightEncoder.getPosition() * metersPerMotorRotation * rightSign;
+    inputs.leftVelocityMetersPerSecond =
+        leftEncoder.getVelocity() / 60.0 * metersPerMotorRotation * leftSign;
+    inputs.rightVelocityMetersPerSecond =
+        rightEncoder.getVelocity() / 60.0 * metersPerMotorRotation * rightSign;
+    inputs.headingRadians =
+        (inputs.rightPositionMeters - inputs.leftPositionMeters)
+            / TankDriveConstants.SIM_TRACK_WIDTH_METERS;
   }
 
   @Override

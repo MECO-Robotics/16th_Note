@@ -60,8 +60,10 @@ public final class Flywheel extends SubsystemBase {
     Logger.processInputs(getName(), inputs);
     if (active && (getCurrentCommand() == null || getCurrentCommand() == getDefaultCommand()))
       velocitySetpoint = kSetpoint.get();
-    if (!DriverStation.isTeleopEnabled()
-        || !DriverStation.isJoystickConnected(0)
+    boolean enabledForControl =
+        DriverStation.isAutonomousEnabled()
+            || (DriverStation.isTeleopEnabled() && DriverStation.isJoystickConnected(0));
+    if (!enabledForControl
         || !inputs.connected
         || !gainsValid
         || !Double.isFinite(velocitySetpoint)
