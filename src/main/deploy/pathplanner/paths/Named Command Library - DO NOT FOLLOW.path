@@ -127,6 +127,12 @@
       "waypointRelativePos": 0.8,
       "endWaypointRelativePos": null,
       "command": null
+    },
+    {
+      "name": "Shoot75Percent",
+      "waypointRelativePos": 0.85,
+      "endWaypointRelativePos": null,
+      "command": null
     }
   ],
   "globalConstraints": {

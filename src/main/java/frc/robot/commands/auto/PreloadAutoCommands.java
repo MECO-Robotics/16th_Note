@@ -69,7 +69,7 @@ public final class PreloadAutoCommands {
         .withName("Shoot");
   }
 
-  public static Command shootFullSpeedWhenReady(
+  public static Command shootWhenReady(
       Flywheel shooter,
       PositionJoint pivot,
       Motor indexer,
@@ -77,7 +77,8 @@ public final class PreloadAutoCommands {
       DoubleSupplier agitationPosition,
       DoubleSupplier readinessTimeoutSeconds,
       DoubleSupplier feedSeconds,
-      DoubleSupplier indexerVolts) {
+      DoubleSupplier indexerVolts,
+      String commandName) {
     return Commands.defer(
             () -> {
               double speed = Math.max(0.0, shooterRps.getAsDouble());
@@ -106,7 +107,8 @@ public final class PreloadAutoCommands {
                       Commands.runOnce(
                           () ->
                               DriverStation.reportError(
-                                  "ShootFullSpeed timed out before the flywheel reached speed; indexer was not started.",
+                                  commandName
+                                      + " timed out before the flywheel reached speed; indexer was not started.",
                                   false)),
                       shooter::isFinished);
               return Commands.sequence(waitForSpeed, feedWhenReady)
@@ -118,6 +120,6 @@ public final class PreloadAutoCommands {
                       });
             },
             java.util.Set.of(shooter, pivot, indexer))
-        .withName("ShootFullSpeed");
+        .withName(commandName);
   }
 }

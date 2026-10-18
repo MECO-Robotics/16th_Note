@@ -58,6 +58,8 @@ public class RobotContainer {
       new LoggedTunableNumber("Auto/Shoot/SpinupSeconds", 1.5);
   private final LoggedTunableNumber autoFullSpeedRps =
       new LoggedTunableNumber("Auto/Shoot/FullSpeed_Rps", ShooterConstants.FREE_SPEED_RPS);
+  private final LoggedTunableNumber autoBackupSpeedRps =
+      new LoggedTunableNumber("Auto/Shoot/BackupSpeed_Rps", ShooterConstants.FREE_SPEED_RPS * 0.75);
   private final LoggedTunableNumber autoReadyTimeoutSeconds =
       new LoggedTunableNumber("Auto/Shoot/ReadyTimeoutSeconds", 5.0);
   private final LoggedTunableNumber autoFeedSeconds =
@@ -128,6 +130,7 @@ public class RobotContainer {
             .withTimeout(2.0)
             .withName("AutoSpinUp"));
     NamedCommands.registerCommand("Shoot", shootCommand());
+    NamedCommands.registerCommand("Shoot75Percent", shoot75PercentCommand());
     NamedCommands.registerCommand("ShootFullSpeed", shootFullSpeedCommand());
     NamedCommands.registerCommand(
         "StopAll",
@@ -149,7 +152,7 @@ public class RobotContainer {
   }
 
   private Command shootFullSpeedCommand() {
-    return PreloadAutoCommands.shootFullSpeedWhenReady(
+    return PreloadAutoCommands.shootWhenReady(
         shooter,
         pivot,
         indexer,
@@ -157,7 +160,21 @@ public class RobotContainer {
         intermediate::get,
         autoReadyTimeoutSeconds::get,
         autoFeedSeconds::get,
-        autoIndexerVolts::get);
+        autoIndexerVolts::get,
+        "ShootFullSpeed");
+  }
+
+  private Command shoot75PercentCommand() {
+    return PreloadAutoCommands.shootWhenReady(
+        shooter,
+        pivot,
+        indexer,
+        autoBackupSpeedRps::get,
+        intermediate::get,
+        autoReadyTimeoutSeconds::get,
+        autoFeedSeconds::get,
+        autoIndexerVolts::get,
+        "Shoot75Percent");
   }
 
   private void configureButtonBindings() {

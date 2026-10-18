@@ -9,6 +9,12 @@
           "data": {
             "pathName": "Back up and Shoot"
           }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shoot75Percent"
+          }
         }
       ]
     }
