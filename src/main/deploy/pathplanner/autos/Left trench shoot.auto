@@ -13,7 +13,25 @@
         {
           "type": "named",
           "data": {
-            "name": "ShootFullSpeed"
+            "name": "MoveToAgitate"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "SpinUpFlywheelFullSpeed"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "FeedIntakeAndIndexerFullSpeed"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopAll"
           }
         }
       ]

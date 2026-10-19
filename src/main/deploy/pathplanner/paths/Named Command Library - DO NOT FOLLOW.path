@@ -133,6 +133,36 @@
       "waypointRelativePos": 0.85,
       "endWaypointRelativePos": null,
       "command": null
+    },
+    {
+      "name": "MoveToAgitate",
+      "waypointRelativePos": 0.88,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "SpinUpFlywheelFullSpeed",
+      "waypointRelativePos": 0.91,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "SpinUpFlywheel75Percent",
+      "waypointRelativePos": 0.94,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "FeedIntakeAndIndexerFullSpeed",
+      "waypointRelativePos": 0.97,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "FeedIntakeAndIndexer75Percent",
+      "waypointRelativePos": 0.99,
+      "endWaypointRelativePos": null,
+      "command": null
     }
   ],
   "globalConstraints": {

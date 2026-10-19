@@ -13,7 +13,25 @@
         {
           "type": "named",
           "data": {
-            "name": "Shoot75Percent"
+            "name": "MoveToAgitate"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "SpinUpFlywheel75Percent"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "FeedIntakeAndIndexer75Percent"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopAll"
           }
         }
       ]

@@ -122,4 +122,77 @@ public final class PreloadAutoCommands {
             java.util.Set.of(shooter, pivot, indexer))
         .withName(commandName);
   }
+
+  /** Spins the flywheel until it reaches its requested speed or the readiness timeout expires. */
+  public static Command spinUpUntilReady(
+      Flywheel shooter,
+      DoubleSupplier shooterRps,
+      DoubleSupplier readinessTimeoutSeconds,
+      String commandName) {
+    return Commands.defer(
+            () -> {
+              double speed = Math.max(0.0, shooterRps.getAsDouble());
+              double timeout = MathUtil.clamp(readinessTimeoutSeconds.getAsDouble(), 0.0, 8.0);
+              return Commands.run(() -> shooter.setVelocity(speed), shooter)
+                  .until(shooter::isFinished)
+                  .withTimeout(timeout)
+                  .finallyDo(
+                      interrupted -> {
+                        if (interrupted) {
+                          shooter.stop();
+                        } else if (!shooter.isFinished()) {
+                          DriverStation.reportError(
+                              commandName + " timed out before the flywheel reached speed.", false);
+                        }
+                      });
+            },
+            java.util.Set.of(shooter))
+        .withName(commandName);
+  }
+
+  /** Feeds fuel with both rollers only when the flywheel has reached its requested speed. */
+  public static Command feedFuelWhenReady(
+      Flywheel shooter,
+      PositionJoint pivot,
+      Motor intake,
+      Motor indexer,
+      DoubleSupplier shooterRps,
+      DoubleSupplier agitationPosition,
+      DoubleSupplier feedSeconds,
+      DoubleSupplier intakeVolts,
+      DoubleSupplier indexerVolts,
+      String commandName) {
+    return Commands.defer(
+            () -> {
+              double speed = Math.max(0.0, shooterRps.getAsDouble());
+              double feed = MathUtil.clamp(feedSeconds.getAsDouble(), 0.0, 6.0);
+              double intakeOutput = MathUtil.clamp(intakeVolts.getAsDouble(), -6.0, 6.0);
+              double indexerOutput = MathUtil.clamp(indexerVolts.getAsDouble(), -6.0, 6.0);
+              Command feedFuel =
+                  Commands.deadline(
+                      Commands.waitSeconds(feed),
+                      Commands.run(() -> shooter.setVelocity(speed), shooter),
+                      Commands.run(() -> pivot.setPosition(agitationPosition.getAsDouble()), pivot),
+                      intake.voltageCommand(() -> intakeOutput),
+                      indexer.voltageCommand(() -> indexerOutput));
+              return Commands.either(
+                      feedFuel,
+                      Commands.runOnce(
+                          () ->
+                              DriverStation.reportError(
+                                  commandName
+                                      + " did not feed because the flywheel was not up to speed.",
+                                  false)),
+                      shooter::isFinished)
+                  .finallyDo(
+                      interrupted -> {
+                        shooter.stop();
+                        intake.stop();
+                        indexer.stop();
+                        if (interrupted) pivot.stop();
+                      });
+            },
+            java.util.Set.of(shooter, pivot, intake, indexer))
+        .withName(commandName);
+  }
 }

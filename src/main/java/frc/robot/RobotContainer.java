@@ -125,6 +125,50 @@ public class RobotContainer {
     NamedCommands.registerCommand(
         "Agitate", PositionJoint.holdPosition(pivot, intermediate::get).withName("Agitate"));
     NamedCommands.registerCommand(
+        "MoveToAgitate",
+        PreloadAutoCommands.moveIntake(
+            pivot, intermediate::get, autoPivotTimeoutSeconds::get, "MoveToAgitate"));
+    NamedCommands.registerCommand(
+        "SpinUpFlywheelFullSpeed",
+        PreloadAutoCommands.spinUpUntilReady(
+            shooter,
+            autoFullSpeedRps::get,
+            autoReadyTimeoutSeconds::get,
+            "SpinUpFlywheelFullSpeed"));
+    NamedCommands.registerCommand(
+        "SpinUpFlywheel75Percent",
+        PreloadAutoCommands.spinUpUntilReady(
+            shooter,
+            autoBackupSpeedRps::get,
+            autoReadyTimeoutSeconds::get,
+            "SpinUpFlywheel75Percent"));
+    NamedCommands.registerCommand(
+        "FeedIntakeAndIndexerFullSpeed",
+        PreloadAutoCommands.feedFuelWhenReady(
+            shooter,
+            pivot,
+            intake,
+            indexer,
+            autoFullSpeedRps::get,
+            intermediate::get,
+            autoFeedSeconds::get,
+            autoIntakeVolts::get,
+            autoIndexerVolts::get,
+            "FeedIntakeAndIndexerFullSpeed"));
+    NamedCommands.registerCommand(
+        "FeedIntakeAndIndexer75Percent",
+        PreloadAutoCommands.feedFuelWhenReady(
+            shooter,
+            pivot,
+            intake,
+            indexer,
+            autoBackupSpeedRps::get,
+            intermediate::get,
+            autoFeedSeconds::get,
+            autoIntakeVolts::get,
+            autoIndexerVolts::get,
+            "FeedIntakeAndIndexer75Percent"));
+    NamedCommands.registerCommand(
         "AutoSpinUp",
         Commands.run(() -> shooter.setVelocity(shooterA.get()), shooter)
             .withTimeout(2.0)
