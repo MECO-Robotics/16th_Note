@@ -30,11 +30,11 @@ def main():
     def send(kind, device, data):
         ws.send(json.dumps({"type": kind, "device": device, "data": data}))
 
-    def gamepad(seconds=0.4, *, buttons=(), lt=0, rt=0, pov=-1, enabled=True):
+    def gamepad(seconds=0.4, *, buttons=(), forward=0, lt=0, rt=0, pov=-1, enabled=True):
         end = time.monotonic() + seconds
         while time.monotonic() < end:
             values = [index + 1 in buttons for index in range(14)]
-            send("Joystick", "0", {">axes": [0, 0, lt, rt, 0, 0],
+            send("Joystick", "0", {">axes": [0, -forward, lt, rt, 0, 0],
                                    ">buttons": values, ">povs": [pov]})
             send("DriverStation", "", {">enabled": enabled, ">autonomous": False,
                                        ">test": False, ">ds": True, ">new_data": True})
@@ -70,13 +70,24 @@ def main():
         gamepad(buttons=(1,))
         gamepad(3)
         rpm = value("Shooter", "Velocity") * 60
-        check("A holds 50 percent free speed after release", abs(rpm - 5676 * (22 / 26) * 0.5) < 150, rpm=rpm)
+        check("A holds 50 percent free speed after release",
+              abs(rpm - 5676 * (22 / 26) * 0.5) < 150, rpm=rpm)
+        gamepad(buttons=(2,))
+        check("B zero voltage", abs(value("Shooter", "AppliedVolts")) < 0.01)
+        gamepad(buttons=(4,), forward=1)
+        drive_volts = nt.getEntry(
+            "/AdvantageKit/RealOutputs/TankDrive/CommandedVolts"
+        ).getDoubleArray([])
+        shooter_volts = value("Shooter", "AppliedVolts")
+        check("Y vision shooter stops without vision and preserves manual drive",
+              len(drive_volts) == 2
+              and all(volts > 11.5 for volts in drive_volts)
+              and abs(shooter_volts) < 0.01,
+              driveVolts=list(drive_volts), shooterVolts=shooter_volts)
         gamepad(buttons=(3,))
         gamepad(3)
         rpm = value("Shooter", "Velocity") * 60
         check("X holds 75 percent free speed", abs(rpm - 5676 * (22 / 26) * 0.75) < 200, rpm=rpm)
-        gamepad(buttons=(2,))
-        check("B zero voltage", abs(value("Shooter", "AppliedVolts")) < 0.01)
         gamepad(pov=0)
         gamepad(6)
         position = value("Pivot", "OutputPosition")
@@ -106,7 +117,7 @@ def main():
             report = Path(__file__).resolve().parents[1] / "build/sim-mechanism-results.json"
             report.write_text(json.dumps(results, indent=2) + "\n")
             print(f"Report: {report}")
-    if len(results) != 14 or not all(result["passed"] for result in results):
+    if len(results) != 15 or not all(result["passed"] for result in results):
         raise SystemExit("Mechanism simulation checks failed")
 
 

@@ -1,4 +1,4 @@
-# 16th Note — tank robot
+# Pete — tank robot
 
 Team 9924. Uses the rebuilt command/subsystem/IO structure and AdvantageKit logging.
 
@@ -15,12 +15,20 @@ Xbox USB 0 controls:
 | Left Y / right X | Arcade drive / turn |
 | RT / LT | Intake forward / reverse, proportional up to 6 V |
 | RB / LB | Indexer forward / reverse at 6 V |
-| A / X | Shooter PID at 50% / 75% geared free speed (about 2401 / 3602 wheel RPM) |
+| A | Shooter PID at 50% geared free speed (about 2401 wheel RPM) |
+| X | Shooter PID at 75% geared free speed (about 3602 wheel RPM) |
 | B | Shooter 0 V |
+| Y (hold) | Set shooter speed from the visible hub AprilTag distance |
 | POV Down / Up | Pivot stow +0.25 rotations (+90 degrees) / deploy -1/6 rotations (-60 degrees) |
 | POV Right | Pivot +1/24 rotations (+15 degrees), tunable intermediate preset |
 
-Shooter and pivot presets remain active after button release. Roller controls stop on release; opposing controls cancel. Disable stops all mechanisms.
+A/X shooter presets and pivot presets remain active after button release. Y vision control and roller controls stop on release; opposing controls cancel. Disable stops all mechanisms.
+
+The Y-button vision shooter does not move the drivetrain, hood, intake, or indexer. The driver retains full control of Pete while it runs. The PhotonVision integration must provide `HubVisionIO` observations containing a 2026 hub-tag ID, robot-center-to-tag distance, pose ambiguity, and FPGA capture timestamp. Until that adapter is installed, `RobotContainer` uses the disconnected adapter and Y safely keeps the shooter stopped.
+
+The close, middle, and far calibration points are `/TunableNumbers/Vision/DistanceShooter/{CloseDistanceMeters,CloseRps,MiddleDistanceMeters,MiddleRps,FarDistanceMeters,FarRps}`. On first use they default to `0`, intentionally disabling Y until three successful shots are measured on Pete. Distances must be positive and strictly increasing; speeds must be positive and no greater than the geared free speed. The controller interpolates only between those points and stops the shooter outside the tested range. It holds the last valid speed for `/TunableNumbers/Vision/DistanceShooter/LostTargetHoldSeconds` during a brief dropped camera frame, then stops. Observation age and ambiguity limits are tunable in the same group.
+
+To retain the six calibration values across robot-code restarts, redeploys, and roboRIO reboots, disable Pete and set `/TunableNumbers/Vision/DistanceShooter/SaveCalibration` to `true` in AdvantageScope. Pete validates and writes the table to WPILib Preferences, then returns the save request to `false`. Confirm `/AdvantageKit/RealOutputs/DistanceShooter/CalibrationSaveStatus` reads `SAVED` before rebooting. Invalid calibration and save attempts while enabled are rejected. Only the six distance/RPS calibration values are stored by this action; the observation and dropped-frame settings continue to use their code defaults.
 
 Autonomous routines are loaded from `src/main/deploy/pathplanner/autos` through PathPlanner's `AutoBuilder` chooser. The tank drivetrain follows PathPlanner paths with its integrated NEO encoders and calculated differential-drive heading. Available named commands are `DeployIntake`, `RaiseIntakeToFeed`, `StowIntake`, `SpinIntake`, `StopIntake`, `SpinUpShooter`, `AutoSpinUp`, `StopShooter`, `FeedIndexer`, `FeedRollers`, `StopIndexer`, `IdleRollers`, `Agitate`, `Shoot`, `Shoot75Percent`, `ShootFullSpeed`, and `StopAll`; enter these exact names in PathPlanner named-command blocks. Driving and turning belong in PathPlanner path blocks. **Back Up and Shoot** resets odometry, follows **Back up and Shoot**, then runs `Shoot75Percent`. **Left trench shoot** and **Right trench shoot** start at 0 degrees with the intake facing the field, follow their matching mirrored paths, then run `ShootFullSpeed`.
 
@@ -30,11 +38,11 @@ Autonomous routines are loaded from `src/main/deploy/pathplanner/autos` through 
 
 Path following uses `/TunableNumbers/Drive/Auto/{kS,kV,kA,kP}`. The initial values are model estimates and must be checked with the robot safely raised before running on the field. PathPlanner robot mass, moment of inertia, footprint, and maximum speed are also preliminary; the known 3-inch wheel diameter, 4:1 reduction, and 9.414-inch track width are configured.
 
-SPARK MAX wiring: drive CAN 1/2, indexer 3, pivot 5, intake 6, shooter 7. CAN 4 is unused; vision is disabled.
+SPARK MAX wiring: drive CAN 1/2, indexer 3, pivot 5, intake 6, shooter 7. CAN 4 is unused. PhotonVision hardware and the `HubVisionIO` adapter still require integration before the Y-button vision shooter can run.
 
 Gear ratios in `MechanismConstants` use motor rotations per mechanism rotation: shooter 26:22, pivot 171:22. Drive reduction is 4:1 in `TankDriveConstants`. Separate intake/indexer reductions remain unmeasured; their telemetry uses motor rotations/RPM.
 
-Tune P/I/D and feedforward under `/TunableNumbers/Shooter/Gains` and `/TunableNumbers/Pivot/Gains`. Both use the rebuilt project's `LoggedTunableNumber` and `ifChanged` gain-update pattern. Real closed-loop control uses SPARK MAX onboard PID/MAXMotion; gains are not the former software voltage PID gains. Shooter control/telemetry and gains use rotations/second (RPS), matching the rebuilt IO. Shooter A/X presets are `/TunableNumbers/Shooter/Presets/A_Rps` and `X_Rps`. Pivot P starts at `10/12` in controller output units per rotation. These are preliminary settings, not hardware tuning. Pivot output is capped at 25% duty (3 V at 12 V).
+Tune P/I/D and feedforward under `/TunableNumbers/Shooter/Gains` and `/TunableNumbers/Pivot/Gains`. Both use the rebuilt project's `LoggedTunableNumber` and `ifChanged` gain-update pattern. Real closed-loop control uses SPARK MAX onboard PID/MAXMotion; gains are not the former software voltage PID gains. Shooter control/telemetry and gains use rotations/second (RPS), matching the rebuilt IO. Shooter presets remain at `/TunableNumbers/Shooter/Presets/A_Rps` for the A button and autonomous `Shoot`/`SpinUpShooter` commands and `/TunableNumbers/Shooter/Presets/X_Rps` for the X button. Pivot P starts at `10/12` in controller output units per rotation. These are preliminary settings, not hardware tuning. Pivot output is capped at 25% duty (3 V at 12 V).
 
 Pivot angle zero is horizontal. `/TunableNumbers/Pivot/Gains/kG` is the cosine gravity compensation voltage: zero contribution at +90 degrees, maximum at 0 degrees. Positive compensation commands increasing angle toward the stowed position. The pivot motor inversion is false (reversed from its previous true configuration). `kG` starts at 0 until hardware tuning. `HorizontalRotations` is no longer used. The pivot simulation does not model physical gravity.
 
