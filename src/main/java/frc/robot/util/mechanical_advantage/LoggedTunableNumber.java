@@ -69,6 +69,13 @@ public class LoggedTunableNumber implements DoubleSupplier {
     }
   }
 
+  /** Writes a new live dashboard value when tuning mode is enabled. */
+  public boolean set(double value) {
+    if (!hasDefault || !Constants.tuningMode || !Double.isFinite(value)) return false;
+    dashboardNumber.set(value);
+    return true;
+  }
+
   /**
    * Checks whether the number has changed since our last check
    *
