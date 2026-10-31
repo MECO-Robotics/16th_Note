@@ -255,21 +255,23 @@ public class RobotContainer {
         new Trigger(() -> DriverStation.isTeleopEnabled() && DriverStation.isJoystickConnected(0));
     intake.setDefaultCommand(
         intake.voltageCommand(
-            () ->
-                teleop.getAsBoolean()
-                    ? 6
-                        * (driverController.getRightTriggerAxis()
-                            - driverController.getLeftTriggerAxis())
-                    : 0));
+            () -> teleop.getAsBoolean() ? 6 * driverController.getRightTriggerAxis() : 0));
     indexer.setDefaultCommand(
         indexer.voltageCommand(
             () ->
                 teleop.getAsBoolean()
-                    ? 6
-                        * ((driverController.rightBumper().getAsBoolean() ? 1 : 0)
-                            - (driverController.leftBumper().getAsBoolean() ? 1 : 0))
+                    ? 6 * (driverController.rightBumper().getAsBoolean() ? 1 : 0)
                     : 0));
     driverController.a().and(teleop).onTrue(Flywheel.holdVelocity(shooter, shooterA::get));
+    driverController
+        .leftTrigger()
+        .and(teleop)
+        .whileTrue(
+            Commands.parallel(
+                    intake.voltageCommand(() -> MechanismConstants.OUTTAKE_VOLTS),
+                    indexer.voltageCommand(() -> MechanismConstants.OUTTAKE_VOLTS),
+                    shooter.voltageCommand(() -> MechanismConstants.OUTTAKE_VOLTS))
+                .withName("Outtake"));
     driverController
         .y()
         .and(teleop)
