@@ -41,8 +41,8 @@ public final class PositionJoint extends SubsystemBase {
     kG = new LoggedTunableNumber(name + "/Gains/kG", gains.kG());
     kV = new LoggedTunableNumber(name + "/Gains/kV", gains.kV());
     kA = new LoggedTunableNumber(name + "/Gains/kA", gains.kA());
-    kMaxVelo = new LoggedTunableNumber(name + "/Gains/kMaxVelo", gains.kMaxVelo());
-    kMaxAccel = new LoggedTunableNumber(name + "/Gains/kMaxAccel", gains.kMaxAccel());
+    kMaxVelo = new LoggedTunableNumber(name + "/Gains/kMaxVelo", gains.kMaxVelo(), true);
+    kMaxAccel = new LoggedTunableNumber(name + "/Gains/kMaxAccel", gains.kMaxAccel(), true);
     kMinPosition = new LoggedTunableNumber(name + "/Gains/kMinPosition", gains.kMinPosition());
     kMaxPosition = new LoggedTunableNumber(name + "/Gains/kMaxPosition", gains.kMaxPosition());
     kTolerance = new LoggedTunableNumber(name + "/Gains/kTolerance", gains.kTolerance());
