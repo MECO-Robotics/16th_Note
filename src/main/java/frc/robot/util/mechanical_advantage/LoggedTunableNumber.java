@@ -1,5 +1,6 @@
 package frc.robot.util.mechanical_advantage;
 
+import edu.wpi.first.networktables.NetworkTableInstance;
 import frc.robot.constants.Constants;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ public class LoggedTunableNumber implements DoubleSupplier {
   private static final String tableKey = "/TunableNumbers";
 
   private final String key;
+  private final boolean persistent;
   private boolean hasDefault = false;
   private double defaultValue;
   private LoggedNetworkNumber dashboardNumber;
@@ -27,7 +29,12 @@ public class LoggedTunableNumber implements DoubleSupplier {
    * @param dashboardKey Key on dashboard
    */
   public LoggedTunableNumber(String dashboardKey) {
+    this(dashboardKey, false);
+  }
+
+  private LoggedTunableNumber(String dashboardKey, boolean persistent) {
     this.key = tableKey + "/" + dashboardKey;
+    this.persistent = persistent;
   }
 
   /**
@@ -42,6 +49,21 @@ public class LoggedTunableNumber implements DoubleSupplier {
   }
 
   /**
+   * Create a new LoggedTunableNumber with an optional roboRIO-persistent value.
+   *
+   * <p>Persistent values survive NetworkTables server restarts, including robot power cycles and
+   * code deployments, as long as the dashboard key remains unchanged.
+   *
+   * @param dashboardKey Key on dashboard
+   * @param defaultValue Default value when no saved value exists
+   * @param persistent Whether NetworkTables should retain the value across server restarts
+   */
+  public LoggedTunableNumber(String dashboardKey, double defaultValue, boolean persistent) {
+    this(dashboardKey, persistent);
+    initDefault(defaultValue);
+  }
+
+  /**
    * Set the default value of the number. The default value can only be set once.
    *
    * @param defaultValue The default value
@@ -51,6 +73,7 @@ public class LoggedTunableNumber implements DoubleSupplier {
       hasDefault = true;
       this.defaultValue = defaultValue;
       if (Constants.tuningMode) {
+        if (persistent) NetworkTableInstance.getDefault().getDoubleTopic(key).setPersistent(true);
         dashboardNumber = new LoggedNetworkNumber(key, defaultValue);
       }
     }
@@ -67,6 +90,13 @@ public class LoggedTunableNumber implements DoubleSupplier {
     } else {
       return Constants.tuningMode ? dashboardNumber.get() : defaultValue;
     }
+  }
+
+  /** Writes a new live dashboard value when tuning mode is enabled. */
+  public boolean set(double value) {
+    if (!hasDefault || !Constants.tuningMode || !Double.isFinite(value)) return false;
+    dashboardNumber.set(value);
+    return true;
   }
 
   /**

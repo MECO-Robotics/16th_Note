@@ -10,10 +10,14 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.auto.PreloadAutoCommands;
 import frc.robot.commands.drive.TankTeleopCommand;
+import frc.robot.commands.shooter.DistanceBasedShooterCommand;
+import frc.robot.commands.shooter.DistanceShooterCalibrationStore;
+import frc.robot.commands.shooter.DistanceShooterCalibrationStore.Calibration;
 import frc.robot.constants.MechanismConstants;
 import frc.robot.constants.drive.TankDriveConstants;
 import frc.robot.constants.subsystems.IntakeConstants;
 import frc.robot.constants.subsystems.ShooterConstants;
+import frc.robot.constants.vision.VisionConstants;
 import frc.robot.subsystems.flywheel.Flywheel;
 import frc.robot.subsystems.flywheel.FlywheelIO;
 import frc.robot.subsystems.motor.Motor;
@@ -22,8 +26,12 @@ import frc.robot.subsystems.position_joint.PositionJoint;
 import frc.robot.subsystems.position_joint.PositionJointIO;
 import frc.robot.subsystems.tank.TankDrive;
 import frc.robot.subsystems.tank.TankDriveIO;
+import frc.robot.subsystems.vision.HubVision;
+import frc.robot.subsystems.vision.HubVisionIO;
 import frc.robot.util.mechanical_advantage.LoggedTunableNumber;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import org.littletonrobotics.junction.networktables.LoggedNetworkBoolean;
 
 /** Assembles mode-specific IO and commands following the 2026 base project pattern. */
 public class RobotContainer {
@@ -41,6 +49,10 @@ public class RobotContainer {
       new Motor("Intake", MotorIO.create(MechanismConstants.INTAKE_CAN_ID, 1, false, 0.002), 6);
   private final Motor indexer =
       new Motor("Indexer", MotorIO.create(MechanismConstants.INDEXER_CAN_ID, 1, false, 0.002), 6);
+  // Replace the disconnected adapter with the PhotonVision student's HubVisionIO implementation.
+  private final HubVision hubVision = new HubVision(HubVisionIO.disconnected());
+  private final Calibration savedDistanceShooterCalibration =
+      DistanceShooterCalibrationStore.load(ShooterConstants.FREE_SPEED_RPS);
   private final LoggedTunableNumber stow =
       new LoggedTunableNumber(
           "Pivot/Presets/StowRotations", MechanismConstants.PIVOT_HOME_ROTATIONS);
@@ -70,12 +82,73 @@ public class RobotContainer {
       new LoggedTunableNumber("Auto/Intake/Volts", 6.0);
   private final LoggedTunableNumber autoPivotTimeoutSeconds =
       new LoggedTunableNumber("Auto/Pivot/TimeoutSeconds", 2.0);
+  private final LoggedTunableNumber visionCloseDistanceMeters =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/CloseDistanceMeters",
+          savedDistanceShooterCalibration.closeDistanceMeters());
+  private final LoggedTunableNumber visionCloseRps =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/CloseRps", savedDistanceShooterCalibration.closeRps());
+  private final LoggedTunableNumber visionMiddleDistanceMeters =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/MiddleDistanceMeters",
+          savedDistanceShooterCalibration.middleDistanceMeters());
+  private final LoggedTunableNumber visionMiddleRps =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/MiddleRps", savedDistanceShooterCalibration.middleRps());
+  private final LoggedTunableNumber visionFarDistanceMeters =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/FarDistanceMeters",
+          savedDistanceShooterCalibration.farDistanceMeters());
+  private final LoggedTunableNumber visionFarRps =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/FarRps", savedDistanceShooterCalibration.farRps());
+  private final LoggedTunableNumber visionMaxObservationAgeSeconds =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/MaxObservationAgeSeconds",
+          VisionConstants.MAX_OBSERVATION_AGE_SECONDS);
+  private final LoggedTunableNumber visionMaxPoseAmbiguity =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/MaxPoseAmbiguity", VisionConstants.MAX_POSE_AMBIGUITY);
+  private final LoggedTunableNumber visionLostTargetHoldSeconds =
+      new LoggedTunableNumber(
+          "Vision/DistanceShooter/LostTargetHoldSeconds", VisionConstants.LOST_TARGET_HOLD_SECONDS);
+  private final LoggedNetworkBoolean saveDistanceShooterCalibrationRequest =
+      new LoggedNetworkBoolean("/TunableNumbers/Vision/DistanceShooter/SaveCalibration", false);
+  private final LoggedNetworkBoolean captureCloseDistanceRequest =
+      new LoggedNetworkBoolean(
+          "/TunableNumbers/Vision/DistanceShooter/CaptureCloseDistance", false);
+  private final LoggedNetworkBoolean captureMiddleDistanceRequest =
+      new LoggedNetworkBoolean(
+          "/TunableNumbers/Vision/DistanceShooter/CaptureMiddleDistance", false);
+  private final LoggedNetworkBoolean captureFarDistanceRequest =
+      new LoggedNetworkBoolean("/TunableNumbers/Vision/DistanceShooter/CaptureFarDistance", false);
+  private boolean previousSaveDistanceShooterCalibration;
+  private boolean previousCaptureCloseDistance;
+  private boolean previousCaptureMiddleDistance;
+  private boolean previousCaptureFarDistance;
+  private String distanceShooterCalibrationSaveStatus =
+      savedDistanceShooterCalibration.isValid(ShooterConstants.FREE_SPEED_RPS)
+          ? "LOADED_SAVED_CALIBRATION"
+          : "NO_SAVED_CALIBRATION";
+  private String distanceShooterCalibrationCaptureStatus = "NOT_CAPTURED_THIS_BOOT";
   private final CommandXboxController driverController =
       new CommandXboxController(TankDriveConstants.DRIVER_CONTROLLER_PORT);
   private final LoggedDashboardChooser<Command> autoChooser;
 
   public void periodic() {
     autoChooser.periodic();
+    handleDistanceCaptureRequests();
+    boolean saveRequested = saveDistanceShooterCalibrationRequest.get();
+    if (saveRequested && !previousSaveDistanceShooterCalibration) {
+      saveDistanceShooterCalibration();
+      saveDistanceShooterCalibrationRequest.set(false);
+    }
+    previousSaveDistanceShooterCalibration = saveRequested;
+    Logger.recordOutput(
+        "DistanceShooter/CalibrationSaveStatus", distanceShooterCalibrationSaveStatus);
+    Logger.recordOutput(
+        "DistanceShooter/CalibrationCaptureStatus", distanceShooterCalibrationCaptureStatus);
   }
 
   public RobotContainer() {
@@ -182,21 +255,40 @@ public class RobotContainer {
         new Trigger(() -> DriverStation.isTeleopEnabled() && DriverStation.isJoystickConnected(0));
     intake.setDefaultCommand(
         intake.voltageCommand(
-            () ->
-                teleop.getAsBoolean()
-                    ? 6
-                        * (driverController.getRightTriggerAxis()
-                            - driverController.getLeftTriggerAxis())
-                    : 0));
+            () -> teleop.getAsBoolean() ? 6 * driverController.getRightTriggerAxis() : 0));
     indexer.setDefaultCommand(
         indexer.voltageCommand(
             () ->
                 teleop.getAsBoolean()
-                    ? 6
-                        * ((driverController.rightBumper().getAsBoolean() ? 1 : 0)
-                            - (driverController.leftBumper().getAsBoolean() ? 1 : 0))
+                    ? 6 * (driverController.rightBumper().getAsBoolean() ? 1 : 0)
                     : 0));
     driverController.a().and(teleop).onTrue(Flywheel.holdVelocity(shooter, shooterA::get));
+    driverController
+        .leftTrigger()
+        .and(teleop)
+        .whileTrue(
+            Commands.parallel(
+                    intake.voltageCommand(() -> MechanismConstants.OUTTAKE_VOLTS),
+                    indexer.voltageCommand(() -> MechanismConstants.OUTTAKE_VOLTS),
+                    shooter.voltageCommand(() -> MechanismConstants.OUTTAKE_VOLTS))
+                .withName("Outtake"));
+    driverController
+        .y()
+        .and(teleop)
+        .whileTrue(
+            new DistanceBasedShooterCommand(
+                shooter,
+                hubVision,
+                visionCloseDistanceMeters,
+                visionCloseRps,
+                visionMiddleDistanceMeters,
+                visionMiddleRps,
+                visionFarDistanceMeters,
+                visionFarRps,
+                visionMaxObservationAgeSeconds,
+                visionMaxPoseAmbiguity,
+                visionLostTargetHoldSeconds,
+                ShooterConstants.FREE_SPEED_RPS));
     driverController.x().and(teleop).onTrue(Flywheel.holdVelocity(shooter, shooterX::get));
     driverController.b().and(teleop).onTrue(shooter.stopCommand());
     driverController.povDown().and(teleop).onTrue(PositionJoint.holdPosition(pivot, stow::get));
@@ -205,6 +297,99 @@ public class RobotContainer {
         .povRight()
         .and(teleop)
         .onTrue(PositionJoint.holdPosition(pivot, intermediate::get));
+  }
+
+  private void handleDistanceCaptureRequests() {
+    boolean closeRequested = captureCloseDistanceRequest.get();
+    if (closeRequested && !previousCaptureCloseDistance) {
+      captureCurrentVisionDistance("CLOSE", visionCloseDistanceMeters);
+      captureCloseDistanceRequest.set(false);
+    }
+    previousCaptureCloseDistance = closeRequested;
+
+    boolean middleRequested = captureMiddleDistanceRequest.get();
+    if (middleRequested && !previousCaptureMiddleDistance) {
+      captureCurrentVisionDistance("MIDDLE", visionMiddleDistanceMeters);
+      captureMiddleDistanceRequest.set(false);
+    }
+    previousCaptureMiddleDistance = middleRequested;
+
+    boolean farRequested = captureFarDistanceRequest.get();
+    if (farRequested && !previousCaptureFarDistance) {
+      captureCurrentVisionDistance("FAR", visionFarDistanceMeters);
+      captureFarDistanceRequest.set(false);
+    }
+    previousCaptureFarDistance = farRequested;
+  }
+
+  private void captureCurrentVisionDistance(String point, LoggedTunableNumber destination) {
+    if (!DriverStation.isDisabled()) {
+      distanceShooterCalibrationCaptureStatus = "REJECTED_" + point + "_ROBOT_ENABLED";
+      DriverStation.reportWarning(
+          "Distance-shooter distances can only be captured while Pete is disabled.", false);
+      return;
+    }
+
+    HubVision.Observation observation = hubVision.getObservation();
+    boolean usable =
+        hubVision.isUsableForDistance(
+            observation,
+            nonnegative(visionMaxObservationAgeSeconds.get()),
+            nonnegative(visionMaxPoseAmbiguity.get()));
+    if (!usable) {
+      distanceShooterCalibrationCaptureStatus = "REJECTED_" + point + "_NO_VALID_HUB_TAG";
+      DriverStation.reportWarning(
+          "Could not capture the " + point.toLowerCase() + " distance: no valid hub tag.", false);
+      return;
+    }
+
+    if (!destination.set(observation.distanceMeters())) {
+      distanceShooterCalibrationCaptureStatus = "REJECTED_" + point + "_TUNING_DISABLED";
+      DriverStation.reportWarning(
+          "Could not capture the " + point.toLowerCase() + " distance: tuning is disabled.", false);
+      return;
+    }
+
+    distanceShooterCalibrationCaptureStatus = "CAPTURED_" + point;
+    DriverStation.reportWarning(
+        "Captured "
+            + point.toLowerCase()
+            + " distance at "
+            + observation.distanceMeters()
+            + " meters.",
+        false);
+  }
+
+  private void saveDistanceShooterCalibration() {
+    if (!DriverStation.isDisabled()) {
+      distanceShooterCalibrationSaveStatus = "REJECTED_ROBOT_ENABLED";
+      DriverStation.reportWarning(
+          "Distance-shooter calibration can only be saved while Pete is disabled.", false);
+      return;
+    }
+
+    Calibration calibration =
+        new Calibration(
+            visionCloseDistanceMeters.get(),
+            visionCloseRps.get(),
+            visionMiddleDistanceMeters.get(),
+            visionMiddleRps.get(),
+            visionFarDistanceMeters.get(),
+            visionFarRps.get());
+    if (DistanceShooterCalibrationStore.save(calibration, ShooterConstants.FREE_SPEED_RPS)) {
+      distanceShooterCalibrationSaveStatus = "SAVED";
+      DriverStation.reportWarning("Saved distance-shooter calibration on Pete.", false);
+    } else {
+      distanceShooterCalibrationSaveStatus = "REJECTED_INVALID_CALIBRATION";
+      DriverStation.reportError(
+          "Distance-shooter calibration was not saved: distances must increase and all speeds "
+              + "must be positive and at or below geared free speed.",
+          false);
+    }
+  }
+
+  private static double nonnegative(double value) {
+    return Double.isFinite(value) ? Math.max(0.0, value) : 0.0;
   }
 
   public void stop() {

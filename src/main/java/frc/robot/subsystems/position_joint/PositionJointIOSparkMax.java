@@ -176,10 +176,8 @@ public final class PositionJointIOSparkMax implements PositionJointIO {
     var result =
         motor
             .getClosedLoopController()
-            // Diagnostic: isolate MAXMotion's zero-output behavior without bypassing
-            // the controller's configured output cap or position soft limits.
-            .setSetpoint(position, ControlType.kPosition);
-    controlStatus = "Position PID: " + result.name();
+            .setSetpoint(position, ControlType.kMAXMotionPositionControl);
+    controlStatus = "MAXMotion position: " + result.name();
     if (result != REVLibError.kOk) motor.stopMotor();
   }
 
