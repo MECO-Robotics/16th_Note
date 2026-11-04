@@ -13,9 +13,8 @@ Xbox USB 0 controls:
 | Control | Action |
 | --- | --- |
 | Left Y / right X | Arcade drive / turn |
-| RT | Intake forward, proportional up to 6 V |
-| LT (hold) | Outtake: reverse intake, indexer, and flywheel at 6 V |
-| RB | Indexer forward at 6 V |
+| RT / LT | Intake and indexer forward / reverse, proportional up to 6 V |
+| RB / LB | Indexer-only forward / reverse at 6 V |
 | A | Shooter PID at 50% geared free speed (about 2401 wheel RPM) |
 | X | Shooter PID at 75% geared free speed (about 3602 wheel RPM) |
 | B | Shooter 0 V |

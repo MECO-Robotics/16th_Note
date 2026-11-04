@@ -7,7 +7,6 @@ public final class MechanismConstants {
   public static final boolean PIVOT_INVERTED = false;
   public static final int INTAKE_CAN_ID = 6;
   public static final int SHOOTER_CAN_ID = 7;
-  public static final double OUTTAKE_VOLTS = -6.0;
   public static final boolean SHOOTER_INVERTED = true;
   public static final int SHOOTER_PINION_TEETH = 22;
   public static final int SHOOTER_OUTPUT_TEETH = 26;

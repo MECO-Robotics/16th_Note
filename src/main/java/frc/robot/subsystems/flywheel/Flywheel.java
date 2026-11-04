@@ -1,6 +1,5 @@
 package frc.robot.subsystems.flywheel;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -15,10 +14,8 @@ public final class Flywheel extends SubsystemBase {
   private final FlywheelIOInputsAutoLogged inputs = new FlywheelIOInputsAutoLogged();
   private final LoggedTunableNumber kP, kI, kD, kS, kV, kA, kMaxAccel, kTolerance, kSetpoint;
   private boolean active;
-  private boolean voltageControlActive;
   private boolean gainsValid = true;
   private double velocitySetpoint;
-  private double voltageSetpoint;
 
   public Flywheel(FlywheelIO io, FlywheelGains gains) {
     super(io.getName());
@@ -68,19 +65,13 @@ public final class Flywheel extends SubsystemBase {
             || (DriverStation.isTeleopEnabled() && DriverStation.isJoystickConnected(0));
     if (!enabledForControl
         || !inputs.connected
-        || (active
-            && (!gainsValid
-                || !Double.isFinite(velocitySetpoint)
-                || !Double.isFinite(inputs.velocity)))
-        || (voltageControlActive && !Double.isFinite(voltageSetpoint))) stop();
+        || !gainsValid
+        || !Double.isFinite(velocitySetpoint)
+        || !Double.isFinite(inputs.velocity)) stop();
     if (active) io.setVelocity(Math.max(0, velocitySetpoint));
-    else if (voltageControlActive) io.setVoltage(MathUtil.clamp(voltageSetpoint, -12, 12));
     else io.setVoltage(0);
     Logger.recordOutput(getName() + "/Target", velocitySetpoint);
-    Logger.recordOutput(getName() + "/TargetVolts", voltageSetpoint);
-    Logger.recordOutput(
-        getName() + "/ControlMode",
-        active ? "VELOCITY" : voltageControlActive ? "VOLTAGE" : "STOPPED");
+    Logger.recordOutput(getName() + "/ControlMode", active ? "VELOCITY" : "VOLTAGE");
     Logger.recordOutput(getName() + "/GainsValid", gainsValid);
     Logger.recordOutput(getName() + "/isFinished", isFinished());
     Logger.recordOutput(
@@ -91,13 +82,6 @@ public final class Flywheel extends SubsystemBase {
   public void setVelocity(double velocity) {
     velocitySetpoint = velocity;
     active = true;
-    voltageControlActive = false;
-  }
-
-  public void setVoltage(double volts) {
-    voltageSetpoint = volts;
-    active = false;
-    voltageControlActive = true;
   }
 
   public double getVelocity() {
@@ -116,19 +100,13 @@ public final class Flywheel extends SubsystemBase {
         flywheel::stop);
   }
 
-  public Command voltageCommand(DoubleSupplier volts) {
-    return runEnd(() -> setVoltage(volts.getAsDouble()), this::stop);
-  }
-
   public Command stopCommand() {
     return run(this::stop);
   }
 
   public void stop() {
     active = false;
-    voltageControlActive = false;
     velocitySetpoint = 0;
-    voltageSetpoint = 0;
     io.setVoltage(0);
   }
 }
