@@ -267,7 +267,7 @@ public class RobotContainer {
             () -> {
               if (!teleop.getAsBoolean()) return 0;
               double triggerRequest =
-                  driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis();
+                  driverController.getLeftTriggerAxis() - driverController.getRightTriggerAxis();
               double bumperRequest =
                   (driverController.rightBumper().getAsBoolean() ? 1 : 0)
                       - (driverController.leftBumper().getAsBoolean() ? 1 : 0);
