@@ -26,7 +26,9 @@ public final class PositionJoint extends SubsystemBase {
   private double goalPosition;
   private boolean active;
   private boolean gainsValid = true;
-  private boolean temporaryMotionConstraints;
+  private boolean alternateMotionProfileActive;
+  private double alternateMaxVelo = Double.NaN;
+  private double alternateMaxAccel = Double.NaN;
   private double activeMaxVelo;
   private double activeMaxAccel;
   private final double minimumBound, maximumBound;
@@ -42,7 +44,7 @@ public final class PositionJoint extends SubsystemBase {
     kI = new LoggedTunableNumber(name + "/Gains/kI", gains.kI());
     kD = new LoggedTunableNumber(name + "/Gains/kD", gains.kD());
     kS = new LoggedTunableNumber(name + "/Gains/kS", gains.kS());
-    kG = new LoggedTunableNumber(name + "/Gains/kG", gains.kG());
+    kG = new LoggedTunableNumber(name + "/Gains/kG", gains.kG(), true);
     kV = new LoggedTunableNumber(name + "/Gains/kV", gains.kV());
     kA = new LoggedTunableNumber(name + "/Gains/kA", gains.kA());
     kMaxVelo = new LoggedTunableNumber(name + "/Gains/kMaxVelo", gains.kMaxVelo(), true);
@@ -99,10 +101,10 @@ public final class PositionJoint extends SubsystemBase {
                     values[10],
                     values[11],
                     values[12]);
-            if (!temporaryMotionConstraints) {
+            io.setGains(gains);
+            if (!alternateMotionProfileActive) {
               activeMaxVelo = gains.kMaxVelo();
               activeMaxAccel = gains.kMaxAccel();
-              io.setGains(gains);
             }
           }
         },
@@ -136,7 +138,10 @@ public final class PositionJoint extends SubsystemBase {
             && Double.isFinite(goalPosition);
     if (!allowed) stop();
     if (active && allowed)
-      io.setPosition(MathUtil.clamp(goalPosition, gains.kMinPosition(), gains.kMaxPosition()), 0);
+      io.setPosition(
+          MathUtil.clamp(goalPosition, gains.kMinPosition(), gains.kMaxPosition()),
+          0,
+          alternateMotionProfileActive);
     else io.setVoltage(0);
     Logger.recordOutput(getName() + "/GoalPosition", goalPosition);
     Logger.recordOutput(getName() + "/Referenced", inputs.referenced);
@@ -199,35 +204,28 @@ public final class PositionJoint extends SubsystemBase {
       restoreDefaultMotionConstraints();
       return;
     }
-    temporaryMotionConstraints = true;
+    configureAlternateMotionConstraints(maxVelo, maxAccel);
+    alternateMotionProfileActive = true;
     activeMaxVelo = maxVelo;
     activeMaxAccel = maxAccel;
-    io.setGains(withMotionConstraints(gains, maxVelo, maxAccel));
   }
 
   private void restoreDefaultMotionConstraints() {
-    temporaryMotionConstraints = false;
+    alternateMotionProfileActive = false;
     activeMaxVelo = gains.kMaxVelo();
     activeMaxAccel = gains.kMaxAccel();
-    io.setGains(gains);
   }
 
-  private static PositionJointGains withMotionConstraints(
-      PositionJointGains gains, double maxVelo, double maxAccel) {
-    return new PositionJointGains(
-        gains.kP(),
-        gains.kI(),
-        gains.kD(),
-        gains.kS(),
-        gains.kG(),
-        gains.kV(),
-        gains.kA(),
-        maxVelo,
-        maxAccel,
-        gains.kMinPosition(),
-        gains.kMaxPosition(),
-        gains.kTolerance(),
-        gains.kDefaultSetpoint());
+  public void configureAlternateMotionConstraints(double maxVelo, double maxAccel) {
+    if (!Double.isFinite(maxVelo) || maxVelo <= 0 || !Double.isFinite(maxAccel) || maxAccel <= 0) {
+      DriverStation.reportWarning(
+          getName() + " rejected invalid alternate motion constraints.", false);
+      return;
+    }
+    if (maxVelo == alternateMaxVelo && maxAccel == alternateMaxAccel) return;
+    alternateMaxVelo = maxVelo;
+    alternateMaxAccel = maxAccel;
+    io.setAlternateMotionConstraints(maxVelo, maxAccel);
   }
 
   public void stop() {

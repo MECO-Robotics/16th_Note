@@ -15,10 +15,17 @@ class PositionJointTest {
   void temporaryMotionConstraintsRestoreNormalLimitsWhenCommandEnds() {
     assertTrue(HAL.initialize(500, 0));
     class FakeIO implements PositionJointIO {
-      PositionJointGains gains;
+      int setGainsCalls;
+      double alternateMaxVelo;
+      double alternateMaxAccel;
 
       public void setGains(PositionJointGains gains) {
-        this.gains = gains;
+        setGainsCalls++;
+      }
+
+      public void setAlternateMotionConstraints(double maxVelo, double maxAccel) {
+        alternateMaxVelo = maxVelo;
+        alternateMaxAccel = maxAccel;
       }
     }
     var io = new FakeIO();
@@ -27,11 +34,11 @@ class PositionJointTest {
     try {
       var command = PositionJoint.holdPosition(joint, () -> 0.0, () -> 0.4, () -> 0.8);
       command.initialize();
-      assertEquals(0.4, io.gains.kMaxVelo());
-      assertEquals(0.8, io.gains.kMaxAccel());
+      assertEquals(0.4, io.alternateMaxVelo);
+      assertEquals(0.8, io.alternateMaxAccel);
+      assertEquals(1, io.setGainsCalls, "Starting agitation must not reconfigure normal gains");
       command.end(true);
-      assertEquals(defaults.kMaxVelo(), io.gains.kMaxVelo());
-      assertEquals(defaults.kMaxAccel(), io.gains.kMaxAccel());
+      assertEquals(1, io.setGainsCalls, "Ending agitation must not reconfigure the controller");
     } finally {
       joint.stop();
       CommandScheduler.getInstance().unregisterSubsystem(joint);

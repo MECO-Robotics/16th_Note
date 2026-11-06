@@ -1,8 +1,13 @@
 package frc.robot;
 
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import org.littletonrobotics.junction.networktables.LoggedNetworkBoolean;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -30,9 +35,6 @@ import frc.robot.subsystems.tank.TankDriveIO;
 import frc.robot.subsystems.vision.HubVision;
 import frc.robot.subsystems.vision.HubVisionIO;
 import frc.robot.util.mechanical_advantage.LoggedTunableNumber;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import org.littletonrobotics.junction.networktables.LoggedNetworkBoolean;
 
 /** Assembles mode-specific IO and commands following the 2026 base project pattern. */
 public class RobotContainer {
@@ -63,7 +65,7 @@ public class RobotContainer {
   private final LoggedTunableNumber intermediate =
       new LoggedTunableNumber(
           "Pivot/Presets/IntermediateRotations", MechanismConstants.PIVOT_INTERMEDIATE_ROTATIONS);
-  private final LoggedTunableNumber agitateMaxVelo =
+    private final LoggedTunableNumber agitateMaxVelo =
       new LoggedTunableNumber("Pivot/Agitate/kMaxVelo", 0.25, true);
   private final LoggedTunableNumber agitateMaxAccel =
       new LoggedTunableNumber("Pivot/Agitate/kMaxAccel", 0.5, true);
@@ -271,7 +273,7 @@ public class RobotContainer {
             () -> {
               if (!teleop.getAsBoolean()) return 0;
               double triggerRequest =
-                  driverController.getLeftTriggerAxis() - driverController.getRightTriggerAxis();
+                  driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis();
               double bumperRequest =
                   (driverController.rightBumper().getAsBoolean() ? 1 : 0)
                       - (driverController.leftBumper().getAsBoolean() ? 1 : 0);
@@ -302,10 +304,7 @@ public class RobotContainer {
     driverController
         .povRight()
         .and(teleop)
-        .onTrue(
-            PositionJoint.holdPosition(
-                    pivot, intermediate::get, agitateMaxVelo::get, agitateMaxAccel::get)
-                .withName("Pivot to Agitate"));
+        .onTrue(PositionJoint.holdPosition(pivot, intermediate::get));
   }
 
   private void handleDistanceCaptureRequests() {

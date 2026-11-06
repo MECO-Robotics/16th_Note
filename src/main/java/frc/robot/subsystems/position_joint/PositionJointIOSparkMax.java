@@ -3,6 +3,7 @@ package frc.robot.subsystems.position_joint;
 import com.revrobotics.PersistMode;
 import com.revrobotics.REVLibError;
 import com.revrobotics.ResetMode;
+import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -28,6 +29,8 @@ public final class PositionJointIOSparkMax implements PositionJointIO {
   private String status = "Not configured";
   private String controlStatus = "Not commanded";
   private String controllerConfiguration = "Not read";
+  private double alternateMaxVelo = Double.NaN;
+  private double alternateMaxAccel = Double.NaN;
 
   private boolean startupReferencePending = true;
 
@@ -77,6 +80,8 @@ public final class PositionJointIOSparkMax implements PositionJointIO {
 
   @Override
   public void setGains(PositionJointGains gains) {
+    if (!Double.isFinite(alternateMaxVelo)) alternateMaxVelo = gains.kMaxVelo();
+    if (!Double.isFinite(alternateMaxAccel)) alternateMaxAccel = gains.kMaxAccel();
     var config = new SparkMaxConfig();
     config
         .inverted(hardware.reversed()[0])
@@ -92,14 +97,21 @@ public final class PositionJointIOSparkMax implements PositionJointIO {
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .pid(gains.kP(), gains.kI(), gains.kD())
-        .outputRange(-maxVolts / 12, maxVolts / 12);
+        .pid(gains.kP(), gains.kI(), gains.kD(), ClosedLoopSlot.kSlot1)
+        .outputRange(-maxVolts / 12, maxVolts / 12)
+        .outputRange(-maxVolts / 12, maxVolts / 12, ClosedLoopSlot.kSlot1);
     config.closedLoop.feedForward.apply(
         new FeedForwardConfig()
             .kS(gains.kS())
             .kCos(gains.kG())
             .kCosRatio(1.0)
             .kV(gains.kV())
-            .kA(gains.kA()));
+            .kA(gains.kA())
+            .kS(gains.kS(), ClosedLoopSlot.kSlot1)
+            .kCos(gains.kG(), ClosedLoopSlot.kSlot1)
+            .kCosRatio(1.0, ClosedLoopSlot.kSlot1)
+            .kV(gains.kV(), ClosedLoopSlot.kSlot1)
+            .kA(gains.kA(), ClosedLoopSlot.kSlot1));
     config
         .closedLoop
         .maxMotion
@@ -108,7 +120,11 @@ public final class PositionJointIOSparkMax implements PositionJointIO {
         // Allow the profile to advance during initial tuning instead of regenerating
         // immediately while the mechanism is still overcoming static friction.
         .allowedProfileError(gains.kMaxPosition() - gains.kMinPosition())
-        .positionMode(MAXMotionPositionMode.kMAXMotionTrapezoidal);
+        .positionMode(MAXMotionPositionMode.kMAXMotionTrapezoidal)
+        .cruiseVelocity(alternateMaxVelo, ClosedLoopSlot.kSlot1)
+        .maxAcceleration(alternateMaxAccel, ClosedLoopSlot.kSlot1)
+        .allowedProfileError(gains.kMaxPosition() - gains.kMinPosition(), ClosedLoopSlot.kSlot1)
+        .positionMode(MAXMotionPositionMode.kMAXMotionTrapezoidal, ClosedLoopSlot.kSlot1);
     config
         .signals
         .maxMotionSetpointPositionAlwaysOn(true)
@@ -167,7 +183,33 @@ public final class PositionJointIOSparkMax implements PositionJointIO {
   }
 
   @Override
+  public void setAlternateMotionConstraints(double maxVelo, double maxAccel) {
+    alternateMaxVelo = maxVelo;
+    alternateMaxAccel = maxAccel;
+    var config = new SparkMaxConfig();
+    config
+        .closedLoop
+        .maxMotion
+        .cruiseVelocity(maxVelo, ClosedLoopSlot.kSlot1)
+        .maxAcceleration(maxAccel, ClosedLoopSlot.kSlot1);
+    configured = false;
+    for (int attempt = 0; attempt < 5 && !configured; attempt++) {
+      var result =
+          motor.configure(
+              config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+      status = result.name();
+      configured = result == REVLibError.kOk;
+    }
+    if (!configured) motor.stopMotor();
+  }
+
+  @Override
   public void setPosition(double position, double velocity) {
+    setPosition(position, velocity, false);
+  }
+
+  @Override
+  public void setPosition(double position, double velocity, boolean useAlternateMotionConstraints) {
     if (!configured || !connected || !Double.isFinite(position)) {
       motor.stopMotor();
       controlStatus = "Blocked: configuration, connection, or nonfinite position";
@@ -176,8 +218,12 @@ public final class PositionJointIOSparkMax implements PositionJointIO {
     var result =
         motor
             .getClosedLoopController()
-            .setSetpoint(position, ControlType.kMAXMotionPositionControl);
-    controlStatus = "MAXMotion position: " + result.name();
+            .setSetpoint(
+                position,
+                ControlType.kMAXMotionPositionControl,
+                useAlternateMotionConstraints ? ClosedLoopSlot.kSlot1 : ClosedLoopSlot.kSlot0);
+    controlStatus =
+        "MAXMotion position slot " + (useAlternateMotionConstraints ? 1 : 0) + ": " + result.name();
     if (result != REVLibError.kOk) motor.stopMotor();
   }
 

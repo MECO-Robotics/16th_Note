@@ -18,6 +18,9 @@ public final class PositionJointIOSim implements PositionJointIO {
   private final ProfiledPIDController pid =
       new ProfiledPIDController(0, 0, 0, new TrapezoidProfile.Constraints(0.25, 0.5));
   private PositionJointGains gains;
+  private double alternateMaxVelo = 0.25;
+  private double alternateMaxAccel = 0.5;
+  private boolean alternateMotionProfileActive;
   private double volts;
   private boolean controlling;
   private double target;
@@ -79,14 +82,35 @@ public final class PositionJointIOSim implements PositionJointIO {
       maximumBound = gains.kMaxPosition();
     }
     pid.setPID(gains.kP(), gains.kI(), gains.kD());
-    pid.setConstraints(new TrapezoidProfile.Constraints(gains.kMaxVelo(), gains.kMaxAccel()));
+    if (!alternateMotionProfileActive)
+      pid.setConstraints(new TrapezoidProfile.Constraints(gains.kMaxVelo(), gains.kMaxAccel()));
+  }
+
+  @Override
+  public void setAlternateMotionConstraints(double maxVelo, double maxAccel) {
+    alternateMaxVelo = maxVelo;
+    alternateMaxAccel = maxAccel;
   }
 
   @Override
   public void setPosition(double position, double velocity) {
+    setPosition(position, velocity, false);
+  }
+
+  @Override
+  public void setPosition(double position, double velocity, boolean useAlternateMotionConstraints) {
     if (!controlling)
       pid.reset(
           model.getAngularPositionRotations(), model.getAngularVelocityRadPerSec() / (2 * Math.PI));
+    if (alternateMotionProfileActive != useAlternateMotionConstraints) {
+      alternateMotionProfileActive = useAlternateMotionConstraints;
+      pid.reset(
+          model.getAngularPositionRotations(), model.getAngularVelocityRadPerSec() / (2 * Math.PI));
+      pid.setConstraints(
+          useAlternateMotionConstraints
+              ? new TrapezoidProfile.Constraints(alternateMaxVelo, alternateMaxAccel)
+              : new TrapezoidProfile.Constraints(gains.kMaxVelo(), gains.kMaxAccel()));
+    }
     target = MathUtil.clamp(position, gains.kMinPosition(), gains.kMaxPosition());
     controlling = true;
   }

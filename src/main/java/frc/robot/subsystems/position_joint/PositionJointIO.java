@@ -54,7 +54,14 @@ public interface PositionJointIO {
 
   default void setGains(PositionJointGains gains) {}
 
+  default void setAlternateMotionConstraints(double maxVelo, double maxAccel) {}
+
   default void setPosition(double position, double velocity) {}
+
+  default void setPosition(
+      double position, double velocity, boolean useAlternateMotionConstraints) {
+    setPosition(position, velocity);
+  }
 
   default void setVoltage(double volts) {}
 
