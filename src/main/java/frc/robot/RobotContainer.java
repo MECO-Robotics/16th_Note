@@ -63,6 +63,10 @@ public class RobotContainer {
   private final LoggedTunableNumber intermediate =
       new LoggedTunableNumber(
           "Pivot/Presets/IntermediateRotations", MechanismConstants.PIVOT_INTERMEDIATE_ROTATIONS);
+  private final LoggedTunableNumber agitateMaxVelo =
+      new LoggedTunableNumber("Pivot/Agitate/kMaxVelo", 0.25, true);
+  private final LoggedTunableNumber agitateMaxAccel =
+      new LoggedTunableNumber("Pivot/Agitate/kMaxAccel", 0.5, true);
   private final LoggedTunableNumber shooterA =
       new LoggedTunableNumber("Shooter/Presets/A_Rps", ShooterConstants.FREE_SPEED_RPS * 0.5);
   private final LoggedTunableNumber shooterX =
@@ -298,7 +302,10 @@ public class RobotContainer {
     driverController
         .povRight()
         .and(teleop)
-        .onTrue(PositionJoint.holdPosition(pivot, intermediate::get));
+        .onTrue(
+            PositionJoint.holdPosition(
+                    pivot, intermediate::get, agitateMaxVelo::get, agitateMaxAccel::get)
+                .withName("Pivot to Agitate"));
   }
 
   private void handleDistanceCaptureRequests() {

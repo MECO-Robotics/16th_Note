@@ -4,6 +4,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.types.PositionJointConstants.PositionJointGains;
 import frc.robot.util.mechanical_advantage.LoggedTunableNumber;
@@ -25,6 +26,9 @@ public final class PositionJoint extends SubsystemBase {
   private double goalPosition;
   private boolean active;
   private boolean gainsValid = true;
+  private boolean temporaryMotionConstraints;
+  private double activeMaxVelo;
+  private double activeMaxAccel;
   private final double minimumBound, maximumBound;
 
   public PositionJoint(PositionJointIO io, PositionJointGains gains) {
@@ -48,6 +52,8 @@ public final class PositionJoint extends SubsystemBase {
     kTolerance = new LoggedTunableNumber(name + "/Gains/kTolerance", gains.kTolerance());
     kSetpoint = new LoggedTunableNumber(name + "/Gains/kSetpoint", gains.kDefaultSetpoint());
     goalPosition = gains.kDefaultSetpoint();
+    activeMaxVelo = gains.kMaxVelo();
+    activeMaxAccel = gains.kMaxAccel();
     io.setGains(gains);
     SmartDashboard.putData(
         name + "/Reference home (disabled)",
@@ -93,7 +99,11 @@ public final class PositionJoint extends SubsystemBase {
                     values[10],
                     values[11],
                     values[12]);
-            io.setGains(gains);
+            if (!temporaryMotionConstraints) {
+              activeMaxVelo = gains.kMaxVelo();
+              activeMaxAccel = gains.kMaxAccel();
+              io.setGains(gains);
+            }
           }
         },
         kP,
@@ -131,6 +141,8 @@ public final class PositionJoint extends SubsystemBase {
     Logger.recordOutput(getName() + "/GoalPosition", goalPosition);
     Logger.recordOutput(getName() + "/Referenced", inputs.referenced);
     Logger.recordOutput(getName() + "/GainsValid", gainsValid);
+    Logger.recordOutput(getName() + "/ActiveMaxVelo", activeMaxVelo);
+    Logger.recordOutput(getName() + "/ActiveMaxAccel", activeMaxAccel);
     Logger.recordOutput(getName() + "/isFinished", isFinished());
     Logger.recordOutput(
         getName() + "/CommandOwner",
@@ -161,6 +173,61 @@ public final class PositionJoint extends SubsystemBase {
 
   public static Command holdPosition(PositionJoint joint, DoubleSupplier rotations) {
     return joint.runEnd(() -> joint.setPosition(rotations.getAsDouble()), joint::stop);
+  }
+
+  public static Command holdPosition(
+      PositionJoint joint,
+      DoubleSupplier rotations,
+      DoubleSupplier maxVelo,
+      DoubleSupplier maxAccel) {
+    return new FunctionalCommand(
+        () -> joint.useTemporaryMotionConstraints(maxVelo.getAsDouble(), maxAccel.getAsDouble()),
+        () -> joint.setPosition(rotations.getAsDouble()),
+        interrupted -> {
+          joint.stop();
+          joint.restoreDefaultMotionConstraints();
+        },
+        () -> false,
+        joint);
+  }
+
+  private void useTemporaryMotionConstraints(double maxVelo, double maxAccel) {
+    if (!Double.isFinite(maxVelo) || maxVelo <= 0 || !Double.isFinite(maxAccel) || maxAccel <= 0) {
+      DriverStation.reportWarning(
+          getName() + " rejected invalid temporary motion constraints; using normal limits.",
+          false);
+      restoreDefaultMotionConstraints();
+      return;
+    }
+    temporaryMotionConstraints = true;
+    activeMaxVelo = maxVelo;
+    activeMaxAccel = maxAccel;
+    io.setGains(withMotionConstraints(gains, maxVelo, maxAccel));
+  }
+
+  private void restoreDefaultMotionConstraints() {
+    temporaryMotionConstraints = false;
+    activeMaxVelo = gains.kMaxVelo();
+    activeMaxAccel = gains.kMaxAccel();
+    io.setGains(gains);
+  }
+
+  private static PositionJointGains withMotionConstraints(
+      PositionJointGains gains, double maxVelo, double maxAccel) {
+    return new PositionJointGains(
+        gains.kP(),
+        gains.kI(),
+        gains.kD(),
+        gains.kS(),
+        gains.kG(),
+        gains.kV(),
+        gains.kA(),
+        maxVelo,
+        maxAccel,
+        gains.kMinPosition(),
+        gains.kMaxPosition(),
+        gains.kTolerance(),
+        gains.kDefaultSetpoint());
   }
 
   public void stop() {

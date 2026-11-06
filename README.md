@@ -48,6 +48,8 @@ Tune P/I/D and feedforward under `/TunableNumbers/Shooter/Gains` and `/TunableNu
 
 The pivot motion limits `/TunableNumbers/Pivot/Gains/kMaxVelo` and `/TunableNumbers/Pivot/Gains/kMaxAccel` are persistent NetworkTables values. Changes made in AdvantageScope survive robot-program restarts, code deployments, roboRIO reboots, and power cycles. Their code defaults are used only when no saved value exists.
 
+D-pad Right uses separate persistent motion limits at `/TunableNumbers/Pivot/Agitate/kMaxVelo` and `/TunableNumbers/Pivot/Agitate/kMaxAccel`, defaulting to `0.25` rotations/second and `0.5` rotations/second squared. These limits apply only while the manual agitation-position command is active; interruption or disable restores the normal pivot limits.
+
 Pivot angle zero is horizontal. `/TunableNumbers/Pivot/Gains/kG` is the cosine gravity compensation voltage: zero contribution at +90 degrees, maximum at 0 degrees. Positive compensation commands increasing angle toward the stowed position. The pivot motor inversion is false (reversed from its previous true configuration). `kG` starts at 0 until hardware tuning. `HorizontalRotations` is no longer used. The pivot simulation does not model physical gravity.
 
 At robot-program startup the relative encoder is seeded to home (+90 degrees). This assumes the intake is physically at home whenever the program starts; it cannot detect movement while unpowered. Disable stops outputs rather than driving home. Reference status is diagnostic only: a controller reset does not latch a motion block. If the relative encoder loses its physical angle, place the intake at home while disabled and use the optional **Pivot/Reference home (disabled)** command. Disabled/disconnected and invalid-gain protection still apply.

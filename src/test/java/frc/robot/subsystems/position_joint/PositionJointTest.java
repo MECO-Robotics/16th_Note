@@ -12,6 +12,33 @@ import org.junit.jupiter.api.Test;
 
 class PositionJointTest {
   @Test
+  void temporaryMotionConstraintsRestoreNormalLimitsWhenCommandEnds() {
+    assertTrue(HAL.initialize(500, 0));
+    class FakeIO implements PositionJointIO {
+      PositionJointGains gains;
+
+      public void setGains(PositionJointGains gains) {
+        this.gains = gains;
+      }
+    }
+    var io = new FakeIO();
+    var defaults = IntakeConstants.PIVOT_GAINS;
+    var joint = new PositionJoint(io, defaults);
+    try {
+      var command = PositionJoint.holdPosition(joint, () -> 0.0, () -> 0.4, () -> 0.8);
+      command.initialize();
+      assertEquals(0.4, io.gains.kMaxVelo());
+      assertEquals(0.8, io.gains.kMaxAccel());
+      command.end(true);
+      assertEquals(defaults.kMaxVelo(), io.gains.kMaxVelo());
+      assertEquals(defaults.kMaxAccel(), io.gains.kMaxAccel());
+    } finally {
+      joint.stop();
+      CommandScheduler.getInstance().unregisterSubsystem(joint);
+    }
+  }
+
+  @Test
   void startupHomeAndGravityFrameAgreeWithPhysicalAngles() {
     assertTrue(HAL.initialize(500, 0));
     var io =
