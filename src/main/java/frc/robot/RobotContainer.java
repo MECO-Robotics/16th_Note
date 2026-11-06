@@ -143,6 +143,12 @@ public class RobotContainer {
 
   public void periodic() {
     autoChooser.periodic();
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () ->
+            pivot.configureAlternateMotionConstraints(agitateMaxVelo.get(), agitateMaxAccel.get()),
+        agitateMaxVelo,
+        agitateMaxAccel);
     handleDistanceCaptureRequests();
     boolean saveRequested = saveDistanceShooterCalibrationRequest.get();
     if (saveRequested && !previousSaveDistanceShooterCalibration) {
@@ -157,6 +163,7 @@ public class RobotContainer {
   }
 
   public RobotContainer() {
+    pivot.configureAlternateMotionConstraints(agitateMaxVelo.get(), agitateMaxAccel.get());
     drive.setDefaultCommand(new TankTeleopCommand(drive, driverController));
     configureButtonBindings();
     registerNamedCommands();
@@ -302,7 +309,10 @@ public class RobotContainer {
     driverController
         .povRight()
         .and(teleop)
-        .onTrue(PositionJoint.holdPosition(pivot, intermediate::get));
+        .onTrue(
+            PositionJoint.holdPosition(
+                    pivot, intermediate::get, agitateMaxVelo::get, agitateMaxAccel::get)
+                .withName("Pivot to Agitate"));
   }
 
   private void handleDistanceCaptureRequests() {
