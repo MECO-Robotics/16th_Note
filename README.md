@@ -2,7 +2,7 @@
 
 Team 9924. Uses the rebuilt command/subsystem/IO structure and AdvantageKit logging.
 
-Pete sets the roboRIO 2 brownout threshold to `6.0 V` at robot-program startup.
+Pete sets the roboRIO 2 brownout threshold to `5.0 V` at robot-program startup.
 
 ## Match logs
 
