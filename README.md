@@ -2,6 +2,8 @@
 
 Team 9924. Uses the rebuilt command/subsystem/IO structure and AdvantageKit logging.
 
+Pete sets the roboRIO 2 brownout threshold to `6.0 V` at robot-program startup.
+
 ## Match logs
 
 At startup, the robot records AdvantageKit `.wpilog` files to writable USB storage at `/U/logs`, or falls back to `/home/lvuser/logs` onboard when USB is missing or unwritable. Logs include Driver Station match information, controller inputs, and mechanism telemetry. AdvantageScope can open these files. The selected directory is published at `/AdvantageKit/RealOutputs/Logging/Directory` and recorded in log metadata as `LogDirectory`.
